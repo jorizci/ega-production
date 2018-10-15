@@ -61,6 +61,6 @@ public class ReEncryptionTest {
             }
         }
         assertEquals("4221d002ceb5d3c9e9137e495ceaa647", report.getUnencryptedMd5());
-        assertEquals(report.getEncryptedMd5(), DatatypeConverter.printHexBinary(md.digest()).toLowerCase());
+        assertEquals(report.getReEncryptedMd5(), DatatypeConverter.printHexBinary(md.digest()).toLowerCase());
     }
 }

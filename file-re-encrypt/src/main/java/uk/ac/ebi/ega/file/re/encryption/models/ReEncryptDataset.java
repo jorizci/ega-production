@@ -15,29 +15,32 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.encryption.core;
+package uk.ac.ebi.ega.file.re.encryption.models;
 
-public class ReEncryptionReport {
+public class ReEncryptDataset {
 
-    private final String encryptedMd5;
-    private final String unencryptedMd5;
-    private final String reEncryptedMd5;
+    private final String egaId;
 
-    public ReEncryptionReport(String encryptedMd5, String unencryptedMd5, String reEncryptedMd5) {
-        this.encryptedMd5 = encryptedMd5;
-        this.unencryptedMd5 = unencryptedMd5;
-        this.reEncryptedMd5 = reEncryptedMd5;
+    private final int totalSuccesses;
+
+    private final int totalFiles;
+
+    public ReEncryptDataset(String egaId, int totalSuccesses, int totalFiles) {
+        this.egaId = egaId;
+        this.totalSuccesses = totalSuccesses;
+        this.totalFiles = totalFiles;
     }
 
-    public String getUnencryptedMd5() {
-        return unencryptedMd5;
+    public String getEgaId() {
+        return egaId;
     }
 
-    public String getEncryptedMd5() {
-        return encryptedMd5;
+    public int getTotalSuccesses() {
+        return totalSuccesses;
     }
 
-    public String getReEncryptedMd5() {
-        return reEncryptedMd5;
+    public int getTotalFiles() {
+        return totalFiles;
     }
+
 }

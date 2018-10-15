@@ -43,6 +43,9 @@ public class ReEncryption {
 
     private static final Logger logger = LoggerFactory.getLogger(ReEncryption.class);
     public static final int BUFFER_SIZE = 8192;
+    public static final int GBYTE = 1024 * 1024 * 1024;
+    //Delta size for report status, 1G
+    private static final long DELTA_SIZE = GBYTE;
 
     public static ReEncryptionReport reEncrypt(File inputFile, char[] passwordInput, File outputFile,
                                                char[] passwordOutput, boolean overwrite)
@@ -53,9 +56,11 @@ public class ReEncryption {
             throw new OutputFileAlreadyExists(outputFile);
         }
 
+        MessageDigest messageDigestEncrypted = null;
         MessageDigest messageDigest = null;
         MessageDigest messageDigestReEncrypted = null;
         try {
+            messageDigestEncrypted = MessageDigest.getInstance("MD5");
             messageDigest = MessageDigest.getInstance("MD5");
             messageDigestReEncrypted = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
@@ -64,27 +69,41 @@ public class ReEncryption {
 
         try (
                 InputStream inputStream = new FileInputStream(inputFile);
-                InputStream decryptedStream = PgpSymmetric.decrypt(inputStream, passwordInput);
+                InputStream digestedInputStream = new DigestInputStream(inputStream, messageDigestEncrypted);
+                InputStream decryptedStream = PgpSymmetric.decrypt(digestedInputStream, passwordInput);
                 InputStream digestedDecryptedStream = new DigestInputStream(decryptedStream, messageDigest);
                 OutputStream outputStream = new FileOutputStream(outputFile);
                 OutputStream digestedOutputStream = new DigestOutputStream(outputStream, messageDigestReEncrypted);
                 OutputStream cypherOutputStream = AesAlexander.encrypt(passwordOutput, digestedOutputStream);
         ) {
             doReEncryption(digestedDecryptedStream, cypherOutputStream);
+            String encryptedMd5 = getNormalizedMd5(messageDigestEncrypted);
             String unencryptedMd5 = getNormalizedMd5(messageDigest);
             String reEncryptedMd5 = getNormalizedMd5(messageDigestReEncrypted);
-            logger.info("Unencrypted Md5 {}, Re encrypted Md5 {}", unencryptedMd5, reEncryptedMd5);
-            return new ReEncryptionReport(unencryptedMd5, reEncryptedMd5);
+            logger.info("EncryptedMd5 {}, Unencrypted Md5 {}, Re encrypted Md5 {}", encryptedMd5, unencryptedMd5,
+                    reEncryptedMd5);
+            return new ReEncryptionReport(encryptedMd5, unencryptedMd5, reEncryptedMd5);
         }
     }
 
     private static void doReEncryption(InputStream digestedDecryptedStream, OutputStream cypherOutputStream) throws IOException {
         byte[] buffer = new byte[BUFFER_SIZE];
         int bytesRead = digestedDecryptedStream.read(buffer);
+        long totalBytes = bytesRead;
+        long lastReported = 0;
         while (bytesRead != -1) {
             cypherOutputStream.write(buffer, 0, bytesRead);
+            if (totalBytes >= lastReported + DELTA_SIZE) {
+                lastReported = totalBytes;
+                logger.info("Total size re-encrypted {} Gbytes", toGbytes(lastReported));
+            }
             bytesRead = digestedDecryptedStream.read(buffer);
+            totalBytes += bytesRead;
         }
+    }
+
+    private static long toGbytes(long lastReported) {
+        return lastReported / GBYTE;
     }
 
     private static String getNormalizedMd5(MessageDigest messageDigest) {
