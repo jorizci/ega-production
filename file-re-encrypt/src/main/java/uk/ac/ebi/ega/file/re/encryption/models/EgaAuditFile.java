@@ -58,18 +58,19 @@ public class EgaAuditFile {
     }
 
     private static String generateFileTypeFromFileName(String filename) {
-        String fileType;
+        String fileType = null;
         String components[] = filename.split("\\.");
-        switch (components[components.length - 1]) {
-            case "gz":
-                fileType = components[components.length - 3];
-                break;
-            case "gpg":
-                fileType = components[components.length - 2];
-                break;
-            default:
-                fileType = components[components.length - 1];
-                break;
+
+        for (int i = components.length - 1; i > 0; i--) {
+            switch (components[i]) {
+                case "gpg":
+                case "gz":
+                    continue;
+                default:
+                    fileType = components[i];
+                    break;
+            }
+            break;
         }
         logger.warn("Generated file type {} from file name {}", fileType, filename);
         return fileType;

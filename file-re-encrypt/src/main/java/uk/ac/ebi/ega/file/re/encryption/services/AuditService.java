@@ -50,6 +50,7 @@ public class AuditService {
         for (EgaAuditFile file : files) {
             if (batch.size() == BATCH) {
                 newFileNames.addAll(doFilterNewFilesBatch(batch));
+                batch.clear();
             }
             batch.add(file.getFullFilename());
         }
@@ -64,7 +65,6 @@ public class AuditService {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("names", names);
         List<String> existingNames = auditTemplate.queryForList(query, parameters, String.class);
-        logger.error(existingNames.size() + "");
         return new HashSet<>(existingNames);
     }
 
