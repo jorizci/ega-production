@@ -58,7 +58,6 @@ public class EgaAuditFile {
     }
 
     private static String generateFileTypeFromFileName(String filename) {
-        String fileType = null;
         String components[] = filename.split("\\.");
 
         for (int i = components.length - 1; i > 0; i--) {
@@ -67,13 +66,12 @@ public class EgaAuditFile {
                 case "gz":
                     continue;
                 default:
-                    fileType = components[i];
-                    break;
+                    logger.info("Generated file type {} from file name {}", components[i], filename);
+                    return components[i];
             }
-            break;
         }
-        logger.warn("Generated file type {} from file name {}", fileType, filename);
-        return fileType;
+        logger.warn("Could not generate file type from file name {}", filename);
+        return null;
     }
 
     private String generateFullFileName(String egaId, String filename) {
