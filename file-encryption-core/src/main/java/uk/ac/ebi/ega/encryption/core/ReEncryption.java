@@ -48,6 +48,15 @@ public class ReEncryption {
     private static final long DELTA_SIZE = GBYTE;
 
     public static ReEncryptionReport reEncrypt(File inputFile, char[] passwordInput, File outputFile,
+                                               char[] passwordOutput, boolean overwrite) throws IOException,
+            OutputFileAlreadyExists, PGPException, InvalidAlgorithmParameterException, InvalidKeySpecException,
+            InvalidKeyException {
+        try (InputStream inputStream = new FileInputStream(inputFile);) {
+            return reEncrypt(inputStream, passwordInput, outputFile, passwordOutput, overwrite);
+        }
+    }
+
+    public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, File outputFile,
                                                char[] passwordOutput, boolean overwrite)
             throws IOException, PGPException, OutputFileAlreadyExists, InvalidAlgorithmParameterException,
             InvalidKeySpecException, InvalidKeyException {
@@ -68,8 +77,7 @@ public class ReEncryption {
         }
 
         try (
-                InputStream inputStream = new FileInputStream(inputFile);
-                InputStream digestedInputStream = new DigestInputStream(inputStream, messageDigestEncrypted);
+                InputStream digestedInputStream = new DigestInputStream(inputFile, messageDigestEncrypted);
                 InputStream decryptedStream = PgpSymmetric.decrypt(digestedInputStream, passwordInput);
                 InputStream digestedDecryptedStream = new DigestInputStream(decryptedStream, messageDigest);
                 OutputStream outputStream = new FileOutputStream(outputFile);
