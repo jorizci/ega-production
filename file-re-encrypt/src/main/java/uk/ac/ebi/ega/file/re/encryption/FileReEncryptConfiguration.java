@@ -28,11 +28,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import uk.ac.ebi.ega.file.re.encryption.properties.FileReEncryptProperties;
+import uk.ac.ebi.ega.file.re.encryption.properties.FireProperties;
 import uk.ac.ebi.ega.file.re.encryption.services.AuditService;
 import uk.ac.ebi.ega.file.re.encryption.services.EraProService;
 import uk.ac.ebi.ega.file.re.encryption.services.FileReEncryptService;
 import uk.ac.ebi.ega.file.re.encryption.services.ProFilerService;
 import uk.ac.ebi.ega.file.re.encryption.services.ReEncryptService;
+import uk.ac.ebi.ega.file.re.encryption.services.fire.FireService;
 
 import java.util.Optional;
 
@@ -60,8 +62,6 @@ public class FileReEncryptConfiguration {
     @Bean
     public CommandLineRunner clr() {
         return args -> {
-            //EGAF00000284189, EGAF00000414876, EGAF00000656292
-            //fileReEncryptService().reEncryptFiles("EGAF00000284189");
             Optional<FileImporterOptions> var = FileImporterOptions.parse(args);
             if (var.isPresent()) {
                 FileImporterOptions options = var.get();
@@ -79,7 +79,7 @@ public class FileReEncryptConfiguration {
     @Bean
     public FileReEncryptService fileReEncryptService() {
         return new FileReEncryptService(fileReEncryptProperties(), reEncryptService(), auditService(),
-                proFilerService());
+                proFilerService(), fireService());
     }
 
     @Bean
@@ -103,8 +103,20 @@ public class FileReEncryptConfiguration {
     }
 
     @Bean
+    public FireService fireService() {
+        return new FireService(fireProperties());
+    }
+
+    @Bean
     @ConfigurationProperties("file-re-encrypt.config")
     public FileReEncryptProperties fileReEncryptProperties() {
         return new FileReEncryptProperties();
     }
+
+    @Bean
+    @ConfigurationProperties("file-re-encrypt.fire")
+    public FireProperties fireProperties() {
+        return new FireProperties();
+    }
+
 }

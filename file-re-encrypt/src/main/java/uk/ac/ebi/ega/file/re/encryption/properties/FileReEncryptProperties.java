@@ -21,7 +21,6 @@ import java.io.File;
 
 public class FileReEncryptProperties {
 
-    private String firePath;
 
     private String stagingPath;
 
@@ -34,14 +33,6 @@ public class FileReEncryptProperties {
     private boolean override;
 
     private boolean insertProfiler;
-
-    public String getFirePath() {
-        return firePath;
-    }
-
-    public void setFirePath(String firePath) {
-        this.firePath = firePath;
-    }
 
     public String getStagingPath() {
         return stagingPath;
