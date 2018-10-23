@@ -11,6 +11,7 @@
 
     <modules>
         <module>file-encryption-core</module>
+        <module>file-re-encrypt</module>
     </modules>
 
 </project>
