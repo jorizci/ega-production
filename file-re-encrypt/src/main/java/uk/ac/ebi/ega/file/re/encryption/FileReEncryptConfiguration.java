@@ -17,8 +17,6 @@
  */
 package uk.ac.ebi.ega.file.re.encryption;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
@@ -35,13 +33,12 @@ import uk.ac.ebi.ega.file.re.encryption.services.FileReEncryptService;
 import uk.ac.ebi.ega.file.re.encryption.services.ProFilerService;
 import uk.ac.ebi.ega.file.re.encryption.services.ReEncryptService;
 import uk.ac.ebi.ega.file.re.encryption.services.fire.FireService;
+import uk.ac.ebi.ega.file.re.encryption.services.key.IKeyGenerator;
 
 import java.util.Optional;
 
 @Configuration
 public class FileReEncryptConfiguration {
-
-    private final Logger logger = LoggerFactory.getLogger(FileReEncryptConfiguration.class);
 
     @Autowired
     @Qualifier("erapro_jdbc_template")
@@ -58,6 +55,9 @@ public class FileReEncryptConfiguration {
     @Autowired
     @Qualifier("pro_filer_jdbc_template")
     private NamedParameterJdbcTemplate proFilerTemplate;
+
+    @Autowired
+    private IKeyGenerator keyGenerator;
 
     @Bean
     public CommandLineRunner clr() {
@@ -79,7 +79,7 @@ public class FileReEncryptConfiguration {
     @Bean
     public FileReEncryptService fileReEncryptService() {
         return new FileReEncryptService(fileReEncryptProperties(), reEncryptService(), auditService(),
-                proFilerService(), fireService());
+                proFilerService(), fireService(), keyGenerator);
     }
 
     @Bean

@@ -52,7 +52,8 @@ public class ReEncryptService {
                 "\"key\", " +
                 "\"path\", " +
                 "creation_date, " +
-                "status) " +
+                "status, " +
+                "pro_fire_archive_id) " +
                 "VALUES(" +
                 ":file_id, " +
                 ":original_encrypted_md5, " +
@@ -61,7 +62,8 @@ public class ReEncryptService {
                 ":key, " +
                 ":path, " +
                 ":creation_date, " +
-                ":status::reencryption_status)";
+                ":status::reencryption_status," +
+                ":pro_fire_archive_id)";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("file_id", file.getEgaId());
         parameters.addValue("original_encrypted_md5", file.getOriginalEncryptedMd5());
@@ -71,6 +73,7 @@ public class ReEncryptService {
         parameters.addValue("path", file.getPath());
         parameters.addValue("creation_date", file.getCreationDate());
         parameters.addValue("status", file.getStatus().toString());
+        parameters.addValue("pro_fire_archive_id", file.getFireArchiveId());
         reEncryptTemplate.update(query, parameters);
     }
 
