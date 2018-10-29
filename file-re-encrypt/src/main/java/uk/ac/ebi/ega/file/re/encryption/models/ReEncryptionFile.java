@@ -42,18 +42,21 @@ public class ReEncryptionFile {
 
     private String path;
 
+    private Number fireArchiveId;
+
     private Timestamp creationDate;
 
     private ReEncryptionStatus status;
 
     public ReEncryptionFile(String egaId, String originalEncryptedMd5, String plainMd5, String encryptedMd5,
-                            String key, String path, ReEncryptionStatus status) {
+                            String key, String path, Number fireArchiveId, ReEncryptionStatus status) {
         this.egaId = egaId;
         this.originalEncryptedMd5 = originalEncryptedMd5;
         this.plainMd5 = plainMd5;
         this.encryptedMd5 = encryptedMd5;
         this.key = key;
         this.path = path;
+        this.fireArchiveId = fireArchiveId;
         this.creationDate = new Timestamp(new Date().getTime());
         this.status = status;
     }
@@ -80,6 +83,10 @@ public class ReEncryptionFile {
 
     public String getPath() {
         return path;
+    }
+
+    public Number getFireArchiveId() {
+        return fireArchiveId;
     }
 
     public Timestamp getCreationDate() {

@@ -30,7 +30,7 @@ import uk.ac.ebi.ega.file.re.encryption.models.ReEncryptionFile;
 import uk.ac.ebi.ega.file.re.encryption.properties.FileReEncryptProperties;
 import uk.ac.ebi.ega.file.re.encryption.services.fire.FireService;
 import uk.ac.ebi.ega.file.re.encryption.services.fire.IFireFile;
-import uk.ac.ebi.ega.file.re.encryption.utils.RandomStringGenerator;
+import uk.ac.ebi.ega.file.re.encryption.services.key.IKeyGenerator;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,13 +59,17 @@ public class FileReEncryptService {
 
     private FireService fireService;
 
+    private IKeyGenerator keyGenerator;
+
     public FileReEncryptService(FileReEncryptProperties properties, ReEncryptService reEncryptService,
-                                AuditService auditService, ProFilerService proFilerService, FireService fireService) {
+                                AuditService auditService, ProFilerService proFilerService, FireService fireService,
+                                IKeyGenerator keyGenerator) {
         this.properties = properties;
         this.reEncryptService = reEncryptService;
         this.auditService = auditService;
         this.proFilerService = proFilerService;
         this.fireService = fireService;
+        this.keyGenerator = keyGenerator;
     }
 
     public void reEncryptDataset(String egaId) {
@@ -113,7 +117,7 @@ public class FileReEncryptService {
                 logger.error("Skipping file {}, re encrypted file already exists on result path. If you want to " +
                         "override it, please enable option 'file-re-encrypt.config.override'.", file.getEgaId());
             } catch (OriginalEncryptedMd5Mismatch originalEncryptedMd5Mismatch) {
-                logger.error("Skipping file {}, original md5 mismatch.", file.getEgaId());
+                logger.error("Skipping file {}, md5 file mismatch.", file.getEgaId());
             }
         }
         return successfulReEncryptionProcesses;
@@ -135,26 +139,17 @@ public class FileReEncryptService {
             OriginalEncryptedMd5Mismatch {
         File fileOut = generateFileOut(file);
         char[] originalPassword = getOriginalGpgPassword();
-        char[] newPassword = generateRandomString();
+        char[] newPassword = keyGenerator.generateKey();
         boolean overrideFile = properties.isOverride();
 
         final IFireFile fileInFire = fireService.getFile(file);
         try (InputStream fileStream = fileInFire.getStream()) {
             final ReEncryptionReport report = ReEncryption.reEncrypt(fileStream, originalPassword, fileOut, newPassword,
                     overrideFile);
-            if (fileInFire.getMd5() != null && !Objects.equals(fileInFire.getMd5(), report.getEncryptedMd5())) {
-                throw new OriginalEncryptedMd5Mismatch();
-            }
-            if (Objects.equals(file.getUnencryptedMd5(), report.getUnencryptedMd5())) {
-                doMd5Match(file.getEgaId(), fileOut, newPassword, report);
-            } else {
-                doMd5Mismatch(file.getEgaId(), fileOut, newPassword, report);
-            }
+            ReEncryptionFile.ReEncryptionStatus status = calculateProcessStatus(file, fileInFire, report);
+            Number proFilerId = insertIntoProFiler(file.getEgaId(), fileOut, status, report);
+            insertInReEncryption(file.getEgaId(), fileOut, newPassword, proFilerId, status, report);
         }
-    }
-
-    private char[] generateRandomString() {
-        return RandomStringGenerator.generateRandomString(properties.getRandomKeySize());
     }
 
     private File generateFileOut(EgaAuditFile file) {
@@ -165,40 +160,53 @@ public class FileReEncryptService {
         return new String(getGpgKeyFile()).trim().toCharArray();
     }
 
-    private void doMd5Mismatch(String egaId, File fileOut, char[] newPassword, ReEncryptionReport report) {
-        logger.warn("File {} re encrypted successfully but there was a md5 mismatch", egaId);
-        reEncryptService.insert(new ReEncryptionFile(
-                egaId,
-                report.getEncryptedMd5(),
-                report.getUnencryptedMd5(),
-                report.getReEncryptedMd5(),
-                new String(newPassword),
-                fileOut.getAbsolutePath(),
-                ReEncryptionFile.ReEncryptionStatus.MISMATCH));
+    private byte[] getGpgKeyFile() throws IOException {
+        return Files.readAllBytes(new File(properties.getGpgKeyPath()).toPath());
     }
 
-    private void doMd5Match(String egaId, File fileOut, char[] newPassword, ReEncryptionReport report) {
-        logger.info("File {} re encrypted successfully", egaId);
-        reEncryptService.insert(new ReEncryptionFile(
-                egaId,
-                report.getEncryptedMd5(),
-                report.getUnencryptedMd5(),
-                report.getReEncryptedMd5(),
-                new String(newPassword),
-                fileOut.getAbsolutePath(),
-                ReEncryptionFile.ReEncryptionStatus.CORRECT));
-        if (properties.isInsertProfiler()) {
-            logger.info("File {} size.", fileOut.length());
-            final Number number = proFilerService.insertFile(egaId, fileOut, report.getReEncryptedMd5());
-            proFilerService.insertArchive(number, properties.getRelativePath(), fileOut, report.getReEncryptedMd5());
-            logger.info("File {} has been inserted into pro-filer.", egaId);
+    private ReEncryptionFile.ReEncryptionStatus calculateProcessStatus(EgaAuditFile file, IFireFile fileInFire,
+                                                                       ReEncryptionReport report)
+            throws OriginalEncryptedMd5Mismatch {
+        if (fileInFire.getMd5() != null && !Objects.equals(fileInFire.getMd5(), report.getEncryptedMd5())) {
+            throw new OriginalEncryptedMd5Mismatch();
+        }
+        if (Objects.equals(file.getUnencryptedMd5(), report.getUnencryptedMd5())) {
+            return ReEncryptionFile.ReEncryptionStatus.CORRECT;
         } else {
-            logger.warn("Insert to pro-filer is disabled, file {} has not been inserted.", egaId);
+            return ReEncryptionFile.ReEncryptionStatus.MISMATCH;
         }
     }
 
-    private byte[] getGpgKeyFile() throws IOException {
-        return Files.readAllBytes(new File(properties.getGpgKeyPath()).toPath());
+    private Number insertIntoProFiler(String egaId, File fileOut, ReEncryptionFile.ReEncryptionStatus status,
+                                      ReEncryptionReport report) {
+        if (!properties.isInsertProfiler()) {
+            logger.warn("Insert to pro-filer is disabled, file {} has not been inserted.", egaId);
+            return null;
+        }
+        if (status == ReEncryptionFile.ReEncryptionStatus.MISMATCH) {
+            logger.warn("File {} has been re-encrypted correctly but unencrypted md5 does not match. It will not be " +
+                    "inserted into pro-filer", egaId);
+            return null;
+        }
+
+        final Number number = proFilerService.insertFile(egaId, fileOut, report.getReEncryptedMd5());
+        final Number proFilerId = proFilerService.insertArchive(number, properties.getRelativePath(), fileOut,
+                report.getReEncryptedMd5());
+        logger.info("File {} has been inserted into pro-filer.", egaId);
+        return proFilerId;
+    }
+
+    private void insertInReEncryption(String egaId, File fileOut, char[] newPassword, Number fireArchiveId,
+                                      ReEncryptionFile.ReEncryptionStatus status, ReEncryptionReport report) {
+        reEncryptService.insert(new ReEncryptionFile(
+                egaId,
+                report.getEncryptedMd5(),
+                report.getUnencryptedMd5(),
+                report.getReEncryptedMd5(),
+                new String(newPassword),
+                fileOut.getAbsolutePath(),
+                fireArchiveId,
+                status));
     }
 
 }

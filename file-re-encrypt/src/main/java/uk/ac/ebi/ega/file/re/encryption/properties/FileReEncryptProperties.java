@@ -28,8 +28,6 @@ public class FileReEncryptProperties {
 
     private String gpgKeyPath;
 
-    private int randomKeySize;
-
     private boolean override;
 
     private boolean insertProfiler;
@@ -60,14 +58,6 @@ public class FileReEncryptProperties {
 
     public void setGpgKeyPath(String gpgKeyPath) {
         this.gpgKeyPath = gpgKeyPath;
-    }
-
-    public int getRandomKeySize() {
-        return randomKeySize;
-    }
-
-    public void setRandomKeySize(int randomKeySize) {
-        this.randomKeySize = randomKeySize;
     }
 
     public boolean isOverride() {

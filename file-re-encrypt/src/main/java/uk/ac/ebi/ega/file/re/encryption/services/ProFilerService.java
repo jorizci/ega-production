@@ -23,7 +23,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
 import java.io.File;
-import java.sql.Date;
+import java.sql.Timestamp;
 import java.util.Calendar;
 
 public class ProFilerService {
@@ -35,7 +35,7 @@ public class ProFilerService {
     }
 
     public Number insertFile(String egaFileId, File file, String md5) {
-        String query = "INSERT INTO re_file(" +
+        String query = "INSERT INTO file(" +
                 "name," +
                 "md5," +
                 "type," +
@@ -54,7 +54,7 @@ public class ProFilerService {
                 ":created," +
                 ":updated," +
                 ":ega_id)";
-        Date date = getCurrentDate();
+        Timestamp date = getCurrentDate();
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("name", file.getName());
         parameters.addValue("md5", md5);
@@ -70,7 +70,7 @@ public class ProFilerService {
         return holder.getKey();
     }
 
-    public void insertArchive(Number fileId, String relativePath, File file, String md5) {
+    public Number insertArchive(Number fileId, String relativePath, File file, String md5) {
         String query = "INSERT INTO archive(" +
                 "name," +
                 "file_id," +
@@ -96,7 +96,7 @@ public class ProFilerService {
                 ":updated," +
                 ":archive_action_id," +
                 ":archive_location_id)";
-        Date date = getCurrentDate();
+        Timestamp date = getCurrentDate();
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("name", file.getName());
         parameters.addValue("file_id", fileId);
@@ -109,10 +109,14 @@ public class ProFilerService {
         parameters.addValue("updated", date);
         parameters.addValue("archive_action_id", 1);
         parameters.addValue("archive_location_id", 1);
-        proFilerTemplate.update(query, parameters);
+
+        KeyHolder holder = new GeneratedKeyHolder();
+        proFilerTemplate.update(query, parameters, holder);
+        return holder.getKey();
     }
 
-    private Date getCurrentDate() {
-        return new Date(Calendar.getInstance().toInstant().toEpochMilli());
+    private Timestamp getCurrentDate() {
+        return new Timestamp(Calendar.getInstance().toInstant().toEpochMilli());
     }
+
 }
