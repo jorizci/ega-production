@@ -196,7 +196,8 @@ public class FileReEncryptService {
             return null;
         }
 
-        final long number = proFilerService.insertFile(egaId, fileOut, report.getReEncryptedMd5());
+        // We are not gonna insert the file id on the file table at least at the moment.
+        final long number = proFilerService.insertFile(null, fileOut, report.getReEncryptedMd5());
         final long proFilerId = proFilerService.insertArchive(number, properties.getRelativePath(), fileOut,
                 report.getReEncryptedMd5());
         logger.info("File {} has been inserted into pro-filer.", egaId);
