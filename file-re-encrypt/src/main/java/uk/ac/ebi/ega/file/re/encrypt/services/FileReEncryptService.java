@@ -76,9 +76,13 @@ public class FileReEncryptService {
 
     public void reEncryptDataset(String egaId) {
         final List<String> datasetFiles = auditService.getDatasetFiles(egaId);
+        if (datasetFiles.isEmpty()) {
+            logger.info("No files where found on dataset {}", egaId);
+            return;
+        }
+
         logger.info("Starting re encryption process for dataset {}, total files to re-encrypt {}", egaId,
                 datasetFiles.size());
-
         int totalSuccesses = reEncryptFiles(datasetFiles.toArray(new String[datasetFiles.size()]));
         doReport(egaId, datasetFiles, totalSuccesses);
     }
