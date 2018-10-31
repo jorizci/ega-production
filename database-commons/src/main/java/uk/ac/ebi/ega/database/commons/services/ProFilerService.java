@@ -21,12 +21,18 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import uk.ac.ebi.ega.database.commons.utils.Batch;
 
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ProFilerService {
+
+    private static final int BATCH = 1000;
 
     private final NamedParameterJdbcTemplate proFilerTemplate;
 
@@ -119,4 +125,27 @@ public class ProFilerService {
         return new Timestamp(Calendar.getInstance().toInstant().toEpochMilli());
     }
 
+    public Map<Long, Integer> getFireIdsExitCodes(List<Long> fireArchiveIds) {
+        return Batch.doInBatchesMap(fireArchiveIds, this::doGetFireIdsExitCodes, BATCH);
+    }
+
+    private Map<Long, Integer> doGetFireIdsExitCodes(List<Long> fireArchiveIds) {
+        String query = "SELECT " +
+                "archive_id, " +
+                "fire_exit_code " +
+                "FROM ega_ARCHIVE.archive" +
+                "WHERE archive_id in(:archive_id)";
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue("archive_id", fireArchiveIds);
+
+        return proFilerTemplate.query(query, parameters, resultSet -> {
+            Map<Long, Integer> result = new HashMap<>();
+            while (resultSet.next()) {
+                Integer fireExitCode = resultSet.getObject("fire_exit_code") != null ?
+                        resultSet.getInt("fire_exit_code") : null;
+                result.put(new Long(resultSet.getLong("archive_id")), fireExitCode);
+            }
+            return result;
+        });
+    }
 }

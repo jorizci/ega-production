@@ -20,6 +20,7 @@ package uk.ac.ebi.ega.database.commons.utils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -45,6 +46,15 @@ public class Batch {
                 .map(function)
                 .flatMap(list -> list.stream())
                 .collect(Collectors.toList());
+    }
+
+    public static <T, R, S> Map<R, S> doInBatchesMap(Collection<T> data, Function<List<T>, Map<R, S>> function,
+                                                     int batchSize) {
+        return partition(data, batchSize)
+                .stream()
+                .map(function)
+                .flatMap(rsMap -> rsMap.entrySet().stream())
+                .collect(Collectors.toMap(o -> o.getKey(), o -> o.getValue()));
     }
 
 }

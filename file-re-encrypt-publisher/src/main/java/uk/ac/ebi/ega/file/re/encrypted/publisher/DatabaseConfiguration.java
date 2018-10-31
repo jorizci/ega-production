@@ -21,7 +21,6 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
@@ -29,27 +28,6 @@ import javax.sql.DataSource;
 
 @Configuration
 public class DatabaseConfiguration {
-
-    @Bean("erapro_datasource_properties")
-    @ConfigurationProperties("file-re-encrypt.datasource.erapro")
-    public DataSourceProperties eraproDataSourceProperties() {
-        return new DataSourceProperties();
-    }
-
-    @Bean("erapro_datasource")
-    public DataSource eraproDataSource() {
-        return eraproDataSourceProperties().initializeDataSourceBuilder().build();
-    }
-
-    @Bean("erapro_jdbc_template")
-    public JdbcTemplate eraproJdbcTemplate() {
-        return new JdbcTemplate(eraproDataSource());
-    }
-
-    @Bean("erapro_transaction_manager")
-    public DataSourceTransactionManager eraproTransactionManager() {
-        return new DataSourceTransactionManager(eraproDataSource());
-    }
 
     @Bean("audit_datasource_properties")
     @ConfigurationProperties("file-re-encrypt.datasource.audit")
@@ -112,6 +90,27 @@ public class DatabaseConfiguration {
     @Bean("pro_filer_transaction_manager")
     public DataSourceTransactionManager proFilerTransactionManager() {
         return new DataSourceTransactionManager(proFilerDataSource());
+    }
+
+    @Bean("pea_datasource_properties")
+    @ConfigurationProperties("file-re-encrypt.datasource.pea")
+    public DataSourceProperties peaDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean("pea_datasource")
+    public DataSource peaDataSource() {
+        return peaDataSourceProperties().initializeDataSourceBuilder().build();
+    }
+
+    @Bean("pea_jdbc_template")
+    public NamedParameterJdbcTemplate peaJdbcTemplate() {
+        return new NamedParameterJdbcTemplate(peaDataSource());
+    }
+
+    @Bean("pea_transaction_manager")
+    public DataSourceTransactionManager peaTransactionManager() {
+        return new DataSourceTransactionManager(peaDataSource());
     }
 
 }

@@ -181,7 +181,7 @@ public class FileReEncryptService {
     }
 
     private Long insertIntoProFiler(String egaId, File fileOut, ReEncryptionFile.ReEncryptionStatus status,
-                                      ReEncryptionReport report) {
+                                    ReEncryptionReport report) {
         if (!properties.isInsertProfiler()) {
             logger.warn("Insert to pro-filer is disabled, file {} has not been inserted.", egaId);
             return null;
@@ -209,6 +209,7 @@ public class FileReEncryptService {
                 report.getReEncryptedMd5(),
                 new String(newPassword),
                 submittedFileName,
+                fileOut.getName(),
                 fileOut.getAbsolutePath(),
                 fireArchiveId,
                 status));

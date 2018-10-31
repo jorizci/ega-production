@@ -21,10 +21,13 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import uk.ac.ebi.ega.database.commons.models.ReEncryptDataset;
 import uk.ac.ebi.ega.database.commons.models.ReEncryptionFile;
+import uk.ac.ebi.ega.database.commons.utils.Batch;
 
 import java.util.List;
 
 public class ReEncryptService {
+
+    private static final int BATCH = 1000;
 
     private NamedParameterJdbcTemplate reEncryptTemplate;
 
@@ -51,6 +54,7 @@ public class ReEncryptService {
                 "encrypted_md5, " +
                 "\"key\", " +
                 "original_path, " +
+                "file_name, " +
                 "new_path, " +
                 "creation_date, " +
                 "status, " +
@@ -61,7 +65,9 @@ public class ReEncryptService {
                 ":plain_md5, " +
                 ":encrypted_md5, " +
                 ":key, " +
-                ":path, " +
+                ":original_path, " +
+                ":file_name, " +
+                ":new_path, " +
                 ":creation_date, " +
                 ":status::reencryption_status," +
                 ":pro_fire_archive_id)";
@@ -72,6 +78,7 @@ public class ReEncryptService {
         parameters.addValue("encrypted_md5", file.getEncryptedMd5());
         parameters.addValue("key", file.getKey());
         parameters.addValue("original_path", file.getOriginalPath());
+        parameters.addValue("file_name", file.getName());
         parameters.addValue("new_path", file.getNewPath());
         parameters.addValue("creation_date", file.getCreationDate());
         parameters.addValue("status", file.getStatus().toString());
@@ -96,7 +103,12 @@ public class ReEncryptService {
         reEncryptTemplate.update(query, parameters);
     }
 
-    public List<ReEncryptionFile> findReEncryptedFiles(List<String> datasetFiles) {
+    public List<ReEncryptionFile> findReEncryptedFiles(List<String> egaFileIds) {
+        final List<ReEncryptionFile> files = Batch.doInBatches(egaFileIds, this::doFindReEncryptedFilesBatch, BATCH);
+        return files;
+    }
+
+    private List<ReEncryptionFile> doFindReEncryptedFilesBatch(List<String> egaFileIds) {
         String query = "SELECT " +
                 "file_id, " +
                 "original_encrypted_md5, " +
@@ -104,13 +116,14 @@ public class ReEncryptService {
                 "encrypted_md5, " +
                 "\"key\", " +
                 "original_path, " +
+                "file_name, " +
                 "new_path, " +
                 "creation_date, " +
                 "status, " +
                 "pro_fire_archive_id " +
                 "FROM re_encryption.processed_files WHERE file_id IN (:fileIds)";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
-        parameters.addValue("fileIds", datasetFiles);
+        parameters.addValue("fileIds", egaFileIds);
         List<ReEncryptionFile> files = reEncryptTemplate.query(query, parameters, (resultSet, i) ->
                 new ReEncryptionFile(
                         resultSet.getString("file_id"),
@@ -119,6 +132,7 @@ public class ReEncryptService {
                         resultSet.getString("encrypted_md5"),
                         resultSet.getString("key"),
                         resultSet.getString("original_path"),
+                        resultSet.getString("file_name"),
                         resultSet.getString("new_path"),
                         resultSet.getLong("pro_fire_archive_id"),
                         ReEncryptionFile.ReEncryptionStatus.valueOf(resultSet.getString("status")),

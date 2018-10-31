@@ -21,7 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import uk.ac.ebi.ega.database.commons.models.EgaAuditFile;
+import uk.ac.ebi.ega.database.commons.models.ReEncryptionFile;
 import uk.ac.ebi.ega.database.commons.utils.Batch;
 
 import java.sql.ResultSet;
@@ -123,5 +126,26 @@ public class AuditService {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("dataset_id", egaId);
         return auditTemplate.queryForList(query, parameters, String.class);
+    }
+
+    public int[] updateFileName(List<ReEncryptionFile> files) {
+        String query = "UPDATE audit_file SET file_name=:file_name WHERE stable_id=:stable_id";
+
+        List<SqlParameterSource> parametersBatch = new ArrayList<>();
+        for (ReEncryptionFile file : files) {
+            MapSqlParameterSource parameters = new MapSqlParameterSource();
+            parameters.addValue("file_name", file.getName());
+            parameters.addValue("stable_id", file.getEgaId());
+            parametersBatch.add(parameters);
+        }
+
+        final int[] results = auditTemplate.batchUpdate(query, SqlParameterSourceUtils.createBatch(parametersBatch));
+        for (int i = 0; i < results.length; i++) {
+            if (results[i] != 1) {
+                logger.error("Update to file {} in Audit did not work properly with file name {}. Total update " +
+                        "operations {}", files.get(i).getEgaId(), files.get(i).getName(), results[i]);
+            }
+        }
+        return results;
     }
 }

@@ -24,12 +24,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import uk.ac.ebi.ega.database.commons.services.AuditService;
-import uk.ac.ebi.ega.database.commons.services.EraProService;
 import uk.ac.ebi.ega.database.commons.services.ProFilerService;
 import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
+import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.file.re.encrypted.publisher.services.PublishReEncryptedFilesService;
 
 import java.util.Optional;
@@ -38,10 +37,6 @@ import java.util.Optional;
 public class PublishReEncryptedFilesConfiguration {
 
     private final Logger logger = LoggerFactory.getLogger(PublishReEncryptedFilesConfiguration.class);
-
-    @Autowired
-    @Qualifier("erapro_jdbc_template")
-    private JdbcTemplate eraproTemplate;
 
     @Autowired
     @Qualifier("audit_jdbc_template")
@@ -54,6 +49,10 @@ public class PublishReEncryptedFilesConfiguration {
     @Autowired
     @Qualifier("pro_filer_jdbc_template")
     private NamedParameterJdbcTemplate proFilerTemplate;
+
+    @Autowired
+    @Qualifier("pea_jdbc_template")
+    private NamedParameterJdbcTemplate peaTemplate;
 
     @Bean
     public CommandLineRunner clr() {
@@ -70,17 +69,12 @@ public class PublishReEncryptedFilesConfiguration {
 
     @Bean
     public PublishReEncryptedFilesService publishReEncryptedFilesService() {
-        return new PublishReEncryptedFilesService(auditService(), reEncryptService());
+        return new PublishReEncryptedFilesService(auditService(), reEncryptService(), proFilerService(), peaService());
     }
 
     @Bean
     public AuditService auditService() {
         return new AuditService(auditTemplate);
-    }
-
-    @Bean
-    public EraProService eraProService() {
-        return new EraProService(eraproTemplate);
     }
 
     @Bean
@@ -91,6 +85,11 @@ public class PublishReEncryptedFilesConfiguration {
     @Bean
     public ProFilerService proFilerService() {
         return new ProFilerService(proFilerTemplate);
+    }
+
+    @Bean
+    public PeaService peaService() {
+        return new PeaService(peaTemplate);
     }
 
 }
