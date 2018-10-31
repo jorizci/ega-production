@@ -53,6 +53,11 @@ public class PublishReEncryptedFilesService {
 
     public void publish(String egaId) {
         final List<String> fileIds = auditService.getDatasetFiles(egaId);
+        if (fileIds.isEmpty()) {
+            logger.info("Dataset {} does not have files", egaId);
+            return;
+        }
+
         final List<ReEncryptionFile> files = reEncryptService.findReEncryptedFiles(fileIds);
         if (checkAllFilesAreEncryptedAndArchived(fileIds, files)) {
             doPublish(files);
