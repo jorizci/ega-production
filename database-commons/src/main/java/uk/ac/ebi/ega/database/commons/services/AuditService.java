@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
-import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import uk.ac.ebi.ega.database.commons.models.EgaAuditFile;
 import uk.ac.ebi.ega.database.commons.models.ReEncryptionFile;
 import uk.ac.ebi.ega.database.commons.utils.Batch;
@@ -83,6 +82,7 @@ public class AuditService {
                 "af.submitted_file_name AS FILE_NAME, " +
                 "af.file_type AS FILE_TYPE, " +
                 "af.staging_source AS BOX, " +
+                "af.file_size AS FILE_SIZE, " +
                 "mu.md5_checksum AS UNENCRYPTED_MD5, " +
                 "me.md5_checksum AS ENCRYPTED_MD5 " +
                 "FROM audit_file af, audit_md5 mu, audit_md5 me " +
@@ -111,7 +111,8 @@ public class AuditService {
                 resultSet.getString("FILE_TYPE"),
                 resultSet.getString("BOX"),
                 resultSet.getString("UNENCRYPTED_MD5"),
-                resultSet.getString("ENCRYPTED_MD5")
+                resultSet.getString("ENCRYPTED_MD5"),
+                resultSet.getLong("FILE_SIZE")
         );
     }
 
@@ -128,24 +129,18 @@ public class AuditService {
         return auditTemplate.queryForList(query, parameters, String.class);
     }
 
-    public int[] updateFileName(List<ReEncryptionFile> files) {
-        String query = "UPDATE audit_file SET file_name=:file_name WHERE stable_id=:stable_id";
+    public int[] updateFileNameAndSize(List<ReEncryptionFile> files) {
+        String query = "UPDATE audit_file SET file_name=:file_name, file_size=:file_size WHERE stable_id=:stable_id";
 
         List<SqlParameterSource> parametersBatch = new ArrayList<>();
         for (ReEncryptionFile file : files) {
             MapSqlParameterSource parameters = new MapSqlParameterSource();
             parameters.addValue("file_name", file.getName());
+            parameters.addValue("file_size", file.getSize());
             parameters.addValue("stable_id", file.getEgaId());
             parametersBatch.add(parameters);
         }
 
-        final int[] results = auditTemplate.batchUpdate(query, SqlParameterSourceUtils.createBatch(parametersBatch));
-        for (int i = 0; i < results.length; i++) {
-            if (results[i] != 1) {
-                logger.error("Update to file {} in Audit did not work properly with file name {}. Total update " +
-                        "operations {}", files.get(i).getEgaId(), files.get(i).getName(), results[i]);
-            }
-        }
-        return results;
+        return auditTemplate.batchUpdate(query, parametersBatch.toArray(new SqlParameterSource[]{}));
     }
 }

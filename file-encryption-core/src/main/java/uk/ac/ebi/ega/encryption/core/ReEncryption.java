@@ -84,30 +84,32 @@ public class ReEncryption {
                 OutputStream digestedOutputStream = new DigestOutputStream(outputStream, messageDigestReEncrypted);
                 OutputStream cypherOutputStream = AesAlexander.encrypt(passwordOutput, digestedOutputStream);
         ) {
-            doReEncryption(digestedDecryptedStream, cypherOutputStream);
+            final long unencryptedSize = doReEncryption(digestedDecryptedStream, cypherOutputStream);
             String encryptedMd5 = getNormalizedMd5(messageDigestEncrypted);
             String unencryptedMd5 = getNormalizedMd5(messageDigest);
             String reEncryptedMd5 = getNormalizedMd5(messageDigestReEncrypted);
-            logger.info("EncryptedMd5 {}, Unencrypted Md5 {}, Re encrypted Md5 {}", encryptedMd5, unencryptedMd5,
-                    reEncryptedMd5);
-            return new ReEncryptionReport(encryptedMd5, unencryptedMd5, reEncryptedMd5);
+            logger.info("EncryptedMd5 {}, Unencrypted Md5 {}, Re encrypted Md5 {}, unencrypted file size {} bytes",
+                    encryptedMd5, unencryptedMd5, reEncryptedMd5, unencryptedSize);
+            return new ReEncryptionReport(encryptedMd5, unencryptedMd5, reEncryptedMd5, unencryptedSize);
         }
     }
 
-    private static void doReEncryption(InputStream digestedDecryptedStream, OutputStream cypherOutputStream) throws IOException {
+    private static long doReEncryption(InputStream digestedDecryptedStream, OutputStream cypherOutputStream)
+            throws IOException {
         byte[] buffer = new byte[BUFFER_SIZE];
         int bytesRead = digestedDecryptedStream.read(buffer);
-        long totalBytes = bytesRead;
+        long totalBytes = 0;
         long lastReported = 0;
         while (bytesRead != -1) {
+            totalBytes += bytesRead;
             cypherOutputStream.write(buffer, 0, bytesRead);
             if (totalBytes >= lastReported + DELTA_SIZE) {
                 lastReported = totalBytes;
                 logger.info("Total size re-encrypted {} Gbytes", toGbytes(lastReported));
             }
             bytesRead = digestedDecryptedStream.read(buffer);
-            totalBytes += bytesRead;
         }
+        return totalBytes;
     }
 
     private static long toGbytes(long lastReported) {

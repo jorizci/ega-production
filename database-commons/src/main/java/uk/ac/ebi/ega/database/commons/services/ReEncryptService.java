@@ -56,6 +56,8 @@ public class ReEncryptService {
                 "original_path, " +
                 "file_name, " +
                 "new_path, " +
+                "previous_size, " +
+                "\"size\", " +
                 "creation_date, " +
                 "status, " +
                 "pro_fire_archive_id) " +
@@ -68,6 +70,8 @@ public class ReEncryptService {
                 ":original_path, " +
                 ":file_name, " +
                 ":new_path, " +
+                ":previous_size, " +
+                ":size, " +
                 ":creation_date, " +
                 ":status::reencryption_status," +
                 ":pro_fire_archive_id)";
@@ -80,6 +84,8 @@ public class ReEncryptService {
         parameters.addValue("original_path", file.getOriginalPath());
         parameters.addValue("file_name", file.getName());
         parameters.addValue("new_path", file.getNewPath());
+        parameters.addValue("previous_size", file.getPreviousSize());
+        parameters.addValue("size", file.getSize());
         parameters.addValue("creation_date", file.getCreationDate());
         parameters.addValue("status", file.getStatus().toString());
         parameters.addValue("pro_fire_archive_id", file.getFireArchiveId());
@@ -118,6 +124,8 @@ public class ReEncryptService {
                 "original_path, " +
                 "file_name, " +
                 "new_path, " +
+                "previous_size, " +
+                "\"size\", " +
                 "creation_date, " +
                 "status, " +
                 "pro_fire_archive_id " +
@@ -134,6 +142,8 @@ public class ReEncryptService {
                         resultSet.getString("original_path"),
                         resultSet.getString("file_name"),
                         resultSet.getString("new_path"),
+                        resultSet.getLong("previous_size"),
+                        resultSet.getLong("size"),
                         resultSet.getLong("pro_fire_archive_id"),
                         ReEncryptionFile.ReEncryptionStatus.valueOf(resultSet.getString("status")),
                         resultSet.getTimestamp("creation_date"))

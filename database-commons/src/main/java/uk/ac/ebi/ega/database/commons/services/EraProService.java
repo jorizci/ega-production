@@ -74,7 +74,7 @@ public class EraProService {
         String box = resultSet.getString("DIR_NAME");
         String unencryptedMd5 = resultSet.getString("md5");
         String encryptedMd5 = resultSet.getString("enc_md5");
-        return new EgaAuditFile(egaId, filename, fileType, box, unencryptedMd5, encryptedMd5);
+        return new EgaAuditFile(egaId, filename, fileType, box, unencryptedMd5, encryptedMd5, 0);
     }
 
     public List<EgaAuditFile> getFilesLinkedToAnalysisInTheLastDays(long days) {

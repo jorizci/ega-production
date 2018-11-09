@@ -39,9 +39,11 @@ public class EgaAuditFile {
 
     private String fileType;
 
+    private long fileSize;
+
     //TODO unit test this creation
-    public EgaAuditFile(String egaId, String filename, String fileType, String box, String unencyptedMd5,
-                        String encryptedMd5) {
+    public EgaAuditFile(String egaId, String filename, String fileType, String box, String unencryptedMd5,
+                        String encryptedMd5, long fileSize) {
         Assert.hasLength(egaId, "EgaId is missing");
         Assert.hasLength(filename, "EgaId " + egaId + " does not have a file connected to it.");
         this.egaId = egaId;
@@ -53,7 +55,7 @@ public class EgaAuditFile {
             this.fileType = fileType;
         }
         this.box = box;
-        this.unencryptedMd5 = unencyptedMd5;
+        this.unencryptedMd5 = unencryptedMd5;
         this.encryptedMd5 = encryptedMd5;
     }
 
@@ -125,5 +127,24 @@ public class EgaAuditFile {
 
     public boolean isEncryptedMd5Valid() {
         return validateMd5(encryptedMd5);
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public String getFileExtensions() {
+        String components[] = submittedFileName.split("\\.");
+        if (components.length == 1) {
+            return "";
+        }
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 1; i < components.length; i++) {
+            if (components[i].equals("cip") || components[i].equals("gpg")) {
+                break;
+            }
+            stringBuilder.append(".").append(components[i]);
+        }
+        return stringBuilder.toString();
     }
 }

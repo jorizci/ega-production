@@ -114,4 +114,25 @@ public class DatabaseConfiguration {
         return new DataSourceTransactionManager(proFilerDataSource());
     }
 
+    @Bean("pea_datasource_properties")
+    @ConfigurationProperties("file-re-encrypt.datasource.pea")
+    public DataSourceProperties peaDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Bean("pea_datasource")
+    public DataSource peaDataSource() {
+        return peaDataSourceProperties().initializeDataSourceBuilder().build();
+    }
+
+    @Bean("pea_jdbc_template")
+    public NamedParameterJdbcTemplate peaJdbcTemplate() {
+        return new NamedParameterJdbcTemplate(peaDataSource());
+    }
+
+    @Bean("pea_transaction_manager")
+    public DataSourceTransactionManager peaTransactionManager() {
+        return new DataSourceTransactionManager(peaDataSource());
+    }
+
 }

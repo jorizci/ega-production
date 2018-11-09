@@ -20,13 +20,18 @@ package uk.ac.ebi.ega.encryption.core;
 public class ReEncryptionReport {
 
     private final String encryptedMd5;
+
     private final String unencryptedMd5;
+
     private final String reEncryptedMd5;
 
-    public ReEncryptionReport(String encryptedMd5, String unencryptedMd5, String reEncryptedMd5) {
+    private final long unencryptedSize;
+
+    public ReEncryptionReport(String encryptedMd5, String unencryptedMd5, String reEncryptedMd5, long unencryptedSize) {
         this.encryptedMd5 = encryptedMd5;
         this.unencryptedMd5 = unencryptedMd5;
         this.reEncryptedMd5 = reEncryptedMd5;
+        this.unencryptedSize = unencryptedSize;
     }
 
     public String getUnencryptedMd5() {
@@ -39,5 +44,9 @@ public class ReEncryptionReport {
 
     public String getReEncryptedMd5() {
         return reEncryptedMd5;
+    }
+
+    public long getUnencryptedSize() {
+        return unencryptedSize;
     }
 }

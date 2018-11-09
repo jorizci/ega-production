@@ -27,6 +27,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import uk.ac.ebi.ega.database.commons.services.AuditService;
 import uk.ac.ebi.ega.database.commons.services.EraProService;
+import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.database.commons.services.ProFilerService;
 import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
 import uk.ac.ebi.ega.file.re.encrypt.properties.FileReEncryptProperties;
@@ -57,6 +58,10 @@ public class FileReEncryptConfiguration {
     private NamedParameterJdbcTemplate proFilerTemplate;
 
     @Autowired
+    @Qualifier("pea_jdbc_template")
+    private NamedParameterJdbcTemplate peaTemplate;
+
+    @Autowired
     private IKeyGenerator keyGenerator;
 
     @Bean
@@ -78,8 +83,8 @@ public class FileReEncryptConfiguration {
 
     @Bean
     public FileReEncryptService fileReEncryptService() {
-        return new FileReEncryptService(fileReEncryptProperties(), reEncryptService(), auditService(),
-                proFilerService(), fireService(), keyGenerator);
+        return new FileReEncryptService(fileReEncryptProperties(), reEncryptService(), proFilerService(), peaService(),
+                fireService(), keyGenerator);
     }
 
     @Bean
@@ -100,6 +105,11 @@ public class FileReEncryptConfiguration {
     @Bean
     public ProFilerService proFilerService() {
         return new ProFilerService(proFilerTemplate);
+    }
+
+    @Bean
+    public PeaService peaService() {
+        return new PeaService(peaTemplate);
     }
 
     @Bean

@@ -19,7 +19,7 @@ package uk.ac.ebi.ega.file.re.encrypt.services.fire;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ega.database.commons.models.EgaAuditFile;
+import uk.ac.ebi.ega.database.commons.models.EgaPublishedFile;
 import uk.ac.ebi.ega.file.re.encrypt.properties.FireProperties;
 
 import java.io.BufferedReader;
@@ -46,7 +46,7 @@ public class FireService {
         this.fireProperties = fireProperties;
     }
 
-    public IFireFile getFile(EgaAuditFile file) throws FileNotFoundException {
+    public IFireFile getFile(EgaPublishedFile file) throws FileNotFoundException {
         if (fireProperties.isUseDirect()) {
             HttpURLConnection connection = null;
             try {
@@ -65,9 +65,9 @@ public class FireService {
                 }
             }
         } else {
-            return new FuseFireFile(fireProperties.getMountPath(), file.getSubmittedFileName());
+            return new FuseFireFile(fireProperties.getMountPath(), file.getFileName());
         }
-        throw new FileNotFoundException("File " + file.getSubmittedFileName() + " could not be accessed " +
+        throw new FileNotFoundException("File " + file.getFileName() + " could not be accessed " +
                 "through Fire Direct");
     }
 
@@ -94,12 +94,19 @@ public class FireService {
         return map;
     }
 
-    private HttpURLConnection prepareConnection(EgaAuditFile file, URL url) throws IOException {
+    private HttpURLConnection prepareConnection(EgaPublishedFile file, URL url) throws IOException {
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
         con.setRequestProperty("X-FIRE-Archive", "ega");
         con.setRequestProperty("X-FIRE-Key", fireProperties.getKey());
-        con.setRequestProperty("X-FIRE-FilePath", file.getSubmittedFileName());
+        con.setRequestProperty("X-FIRE-FilePath", normalizeFileNameForDirect(file.getFileName()));
         return con;
+    }
+
+    private String normalizeFileNameForDirect(String fileName) {
+        if (fileName.startsWith("/fire/A/ega/vol1/")) {
+            return fileName.replace("/fire/A/ega/vol1/", "");
+        }
+        return fileName;
     }
 }

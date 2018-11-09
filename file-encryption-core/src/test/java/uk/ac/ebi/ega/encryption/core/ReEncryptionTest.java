@@ -60,6 +60,7 @@ public class ReEncryptionTest {
             while (dis.read(buffer) != -1) {
             }
         }
+        assertEquals(20, report.getUnencryptedSize());
         assertEquals("4221d002ceb5d3c9e9137e495ceaa647", report.getUnencryptedMd5());
         assertEquals(report.getReEncryptedMd5(), DatatypeConverter.printHexBinary(md.digest()).toLowerCase());
     }

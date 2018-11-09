@@ -46,6 +46,10 @@ public class ReEncryptionFile {
 
     private String newPath;
 
+    private long previousSize;
+
+    private long size;
+
     private Long fireArchiveId;
 
     private Timestamp creationDate;
@@ -53,14 +57,15 @@ public class ReEncryptionFile {
     private ReEncryptionStatus status;
 
     public ReEncryptionFile(String egaId, String originalEncryptedMd5, String plainMd5, String encryptedMd5,
-                            String key, String originalPath, String name, String newPath, Long fireArchiveId,
-                            ReEncryptionStatus status) {
-        this(egaId, originalEncryptedMd5, plainMd5, encryptedMd5, key, originalPath, name, newPath, fireArchiveId,
-                status, new Timestamp(new Date().getTime()));
+                            String key, String originalPath, String name, String newPath, long previousSize,
+                            long size, Long fireArchiveId, ReEncryptionStatus status) {
+        this(egaId, originalEncryptedMd5, plainMd5, encryptedMd5, key, originalPath, name, newPath, previousSize, size,
+                fireArchiveId, status, new Timestamp(new Date().getTime()));
     }
 
     public ReEncryptionFile(String egaId, String originalEncryptedMd5, String plainMd5, String encryptedMd5,
-                            String key, String originalPath, String name, String newPath, Long fireArchiveId,
+                            String key, String originalPath, String name, String newPath,
+                            long previousSize, long size, Long fireArchiveId,
                             ReEncryptionStatus status, Timestamp creationDate) {
         this.egaId = egaId;
         this.originalEncryptedMd5 = originalEncryptedMd5;
@@ -70,6 +75,8 @@ public class ReEncryptionFile {
         this.originalPath = originalPath;
         this.name = name;
         this.newPath = newPath;
+        this.previousSize = previousSize;
+        this.size = size;
         this.fireArchiveId = fireArchiveId;
         this.creationDate = creationDate;
         this.status = status;
@@ -105,6 +112,14 @@ public class ReEncryptionFile {
 
     public String getNewPath() {
         return newPath;
+    }
+
+    public long getPreviousSize() {
+        return previousSize;
+    }
+
+    public long getSize() {
+        return size;
     }
 
     public Long getFireArchiveId() {

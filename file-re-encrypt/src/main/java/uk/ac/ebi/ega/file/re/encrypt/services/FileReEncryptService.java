@@ -20,10 +20,10 @@ package uk.ac.ebi.ega.file.re.encrypt.services;
 import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ega.database.commons.models.EgaAuditFile;
+import uk.ac.ebi.ega.database.commons.models.EgaPublishedFile;
 import uk.ac.ebi.ega.database.commons.models.ReEncryptDataset;
 import uk.ac.ebi.ega.database.commons.models.ReEncryptionFile;
-import uk.ac.ebi.ega.database.commons.services.AuditService;
+import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.database.commons.services.ProFilerService;
 import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
 import uk.ac.ebi.ega.encryption.core.ReEncryption;
@@ -55,27 +55,27 @@ public class FileReEncryptService {
 
     private ReEncryptService reEncryptService;
 
-    private AuditService auditService;
-
     private ProFilerService proFilerService;
+
+    private PeaService peaService;
 
     private FireService fireService;
 
     private IKeyGenerator keyGenerator;
 
     public FileReEncryptService(FileReEncryptProperties properties, ReEncryptService reEncryptService,
-                                AuditService auditService, ProFilerService proFilerService, FireService fireService,
+                                ProFilerService proFilerService, PeaService peaService, FireService fireService,
                                 IKeyGenerator keyGenerator) {
         this.properties = properties;
         this.reEncryptService = reEncryptService;
-        this.auditService = auditService;
         this.proFilerService = proFilerService;
+        this.peaService = peaService;
         this.fireService = fireService;
         this.keyGenerator = keyGenerator;
     }
 
     public void reEncryptDataset(String egaId) {
-        final List<String> datasetFiles = auditService.getDatasetFiles(egaId);
+        final List<EgaPublishedFile> datasetFiles = peaService.getPublishedFiles(egaId);
         if (datasetFiles.isEmpty()) {
             logger.info("No files where found on dataset {}", egaId);
             return;
@@ -83,11 +83,11 @@ public class FileReEncryptService {
 
         logger.info("Starting re encryption process for dataset {}, total files to re-encrypt {}", egaId,
                 datasetFiles.size());
-        int totalSuccesses = reEncryptFiles(datasetFiles.toArray(new String[datasetFiles.size()]));
+        int totalSuccesses = doReEncryptFiles(datasetFiles);
         doReport(egaId, datasetFiles, totalSuccesses);
     }
 
-    private void doReport(String egaId, List<String> datasetFiles, int totalSuccesses) {
+    private void doReport(String egaId, List<EgaPublishedFile> datasetFiles, int totalSuccesses) {
         if (totalSuccesses == datasetFiles.size()) {
             logger.info("Re encryption process for dataset {} finished correctly.", egaId);
         } else {
@@ -98,15 +98,18 @@ public class FileReEncryptService {
     }
 
     public int reEncryptFiles(String... fileIds) {
-        final List<EgaAuditFile> files = auditService.getFiles(fileIds);
+        final List<EgaPublishedFile> files = peaService.getPublishedFiles(fileIds);
 
         if (files.size() != fileIds.length) {
-            logger.error("Could not find the following ids {} on Audit.", findMissingIds(fileIds, files));
+            logger.error("Could not find the following ids {} on Pea.", findMissingIds(fileIds, files));
             System.exit(1);
         }
+        return doReEncryptFiles(files);
+    }
 
+    public int doReEncryptFiles(List<EgaPublishedFile> files) {
         int successfulReEncryptionProcesses = 0;
-        for (EgaAuditFile file : files) {
+        for (EgaPublishedFile file : files) {
             if (reEncryptService.hasThisFileBeenProcessed(file.getEgaId())) {
                 logger.info("Skipping file {}, it has been processed already.", file.getEgaId());
                 successfulReEncryptionProcesses++;
@@ -129,9 +132,9 @@ public class FileReEncryptService {
         return successfulReEncryptionProcesses;
     }
 
-    private List<String> findMissingIds(String[] fileIds, List<EgaAuditFile> files) {
+    private List<String> findMissingIds(String[] fileIds, List<EgaPublishedFile> files) {
         List<String> missingIds = new ArrayList<>();
-        Set<String> collect = files.stream().map(egaAuditFile -> egaAuditFile.getEgaId()).collect(Collectors.toSet());
+        Set<String> collect = files.stream().map(egaFile -> egaFile.getEgaId()).collect(Collectors.toSet());
         for (String fileId : fileIds) {
             if (!collect.contains(fileId)) {
                 missingIds.add(fileId);
@@ -140,7 +143,7 @@ public class FileReEncryptService {
         return missingIds;
     }
 
-    private void doReEncryptFile(EgaAuditFile file) throws InvalidAlgorithmParameterException,
+    private void doReEncryptFile(EgaPublishedFile file) throws InvalidAlgorithmParameterException,
             InvalidKeyException, IOException, PGPException, OutputFileAlreadyExists, InvalidKeySpecException,
             OriginalEncryptedMd5Mismatch {
         File fileOut = generateFileOut(file);
@@ -154,13 +157,13 @@ public class FileReEncryptService {
                     overrideFile);
             ReEncryptionFile.ReEncryptionStatus status = calculateProcessStatus(file, fileInFire, report);
             Long proFilerId = insertIntoProFiler(file.getEgaId(), fileOut, status, report);
-            insertInReEncryption(file.getEgaId(), file.getSubmittedFileName(), fileOut, newPassword, proFilerId,
+            insertInReEncryption(file, fileOut, newPassword, proFilerId,
                     status, report);
         }
     }
 
-    private File generateFileOut(EgaAuditFile file) {
-        return new File(properties.getOutputPath(), file.getEgaId() + ".cip");
+    private File generateFileOut(EgaPublishedFile file) {
+        return new File(properties.getOutputPath(), file.getEgaId() + file.getFileExtensions() + ".cip");
     }
 
     private char[] getOriginalGpgPassword() throws IOException {
@@ -171,7 +174,7 @@ public class FileReEncryptService {
         return Files.readAllBytes(new File(properties.getGpgKeyPath()).toPath());
     }
 
-    private ReEncryptionFile.ReEncryptionStatus calculateProcessStatus(EgaAuditFile file, IFireFile fileInFire,
+    private ReEncryptionFile.ReEncryptionStatus calculateProcessStatus(EgaPublishedFile file, IFireFile fileInFire,
                                                                        ReEncryptionReport report)
             throws OriginalEncryptedMd5Mismatch {
         if (fileInFire.getMd5() != null && !Objects.equals(fileInFire.getMd5(), report.getEncryptedMd5())) {
@@ -204,18 +207,19 @@ public class FileReEncryptService {
         return proFilerId;
     }
 
-    private void insertInReEncryption(String egaId, String submittedFileName, File fileOut, char[] newPassword,
-                                      Long fireArchiveId,
+    private void insertInReEncryption(EgaPublishedFile file, File fileOut, char[] newPassword, Long fireArchiveId,
                                       ReEncryptionFile.ReEncryptionStatus status, ReEncryptionReport report) {
         reEncryptService.insert(new ReEncryptionFile(
-                egaId,
+                file.getEgaId(),
                 report.getEncryptedMd5(),
                 report.getUnencryptedMd5(),
                 report.getReEncryptedMd5(),
                 new String(newPassword),
-                submittedFileName,
+                file.getFileName(),
                 fileOut.getName(),
                 fileOut.getAbsolutePath(),
+                file.getSize(),
+                fileOut.length(),
                 fireArchiveId,
                 status));
     }

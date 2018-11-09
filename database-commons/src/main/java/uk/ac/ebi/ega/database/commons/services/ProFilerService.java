@@ -133,8 +133,8 @@ public class ProFilerService {
         String query = "SELECT " +
                 "archive_id, " +
                 "fire_exit_code " +
-                "FROM ega_ARCHIVE.archive" +
-                "WHERE archive_id in(:archive_id)";
+                "FROM ega_ARCHIVE.archive " +
+                "WHERE archive_id in (:archive_id)";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("archive_id", fireArchiveIds);
 

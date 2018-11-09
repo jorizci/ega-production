@@ -122,8 +122,9 @@ public class PublishReEncryptedFilesService {
     }
 
     private void doPublish(List<ReEncryptionFile> files) {
-        peaService.updateFileName(files);
-        auditService.updateFileName(files);
+        peaService.updateFileNameAndSize(files);
+        auditService.updateFileNameAndSize(files);
+        logger.info("Process finished");
     }
 
 }
