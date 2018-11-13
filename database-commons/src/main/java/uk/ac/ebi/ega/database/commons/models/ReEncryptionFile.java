@@ -32,6 +32,8 @@ public class ReEncryptionFile {
 
     private String egaId;
 
+    private String datasetId;
+
     private String originalEncryptedMd5;
 
     private String plainMd5;
@@ -56,18 +58,19 @@ public class ReEncryptionFile {
 
     private ReEncryptionStatus status;
 
-    public ReEncryptionFile(String egaId, String originalEncryptedMd5, String plainMd5, String encryptedMd5,
-                            String key, String originalPath, String name, String newPath, long previousSize,
-                            long size, Long fireArchiveId, ReEncryptionStatus status) {
-        this(egaId, originalEncryptedMd5, plainMd5, encryptedMd5, key, originalPath, name, newPath, previousSize, size,
-                fireArchiveId, status, new Timestamp(new Date().getTime()));
+    public ReEncryptionFile(String egaId, String datasetId, String originalEncryptedMd5, String plainMd5,
+                            String encryptedMd5, String key, String originalPath, String name, String newPath,
+                            long previousSize, long size, Long fireArchiveId, ReEncryptionStatus status) {
+        this(egaId, datasetId, originalEncryptedMd5, plainMd5, encryptedMd5, key, originalPath, name, newPath,
+                previousSize, size, fireArchiveId, status, new Timestamp(new Date().getTime()));
     }
 
-    public ReEncryptionFile(String egaId, String originalEncryptedMd5, String plainMd5, String encryptedMd5,
-                            String key, String originalPath, String name, String newPath,
+    public ReEncryptionFile(String egaId, String datasetId, String originalEncryptedMd5, String plainMd5,
+                            String encryptedMd5, String key, String originalPath, String name, String newPath,
                             long previousSize, long size, Long fireArchiveId,
                             ReEncryptionStatus status, Timestamp creationDate) {
         this.egaId = egaId;
+        this.datasetId = datasetId;
         this.originalEncryptedMd5 = originalEncryptedMd5;
         this.plainMd5 = plainMd5;
         this.encryptedMd5 = encryptedMd5;
@@ -84,6 +87,10 @@ public class ReEncryptionFile {
 
     public String getEgaId() {
         return egaId;
+    }
+
+    public String getDatasetId() {
+        return datasetId;
     }
 
     public String getOriginalEncryptedMd5() {

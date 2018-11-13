@@ -110,26 +110,41 @@ public class FileReEncryptService {
     public int doReEncryptFiles(List<EgaPublishedFile> files) {
         int successfulReEncryptionProcesses = 0;
         for (EgaPublishedFile file : files) {
-            if (reEncryptService.hasThisFileBeenProcessed(file.getEgaId())) {
-                logger.info("Skipping file {}, it has been processed already.", file.getEgaId());
+            final ReEncryptionFile reEncryptedFile = reEncryptService.findReEncryptedFile(file.getEgaId());
+            if (reEncryptedFile != null) {
+                logger.info("Skipping file {} re-encryption. It has been processed already.", file.getEgaId());
+                doArchiveOfExistingReEncryptedFile(file, reEncryptedFile);
                 successfulReEncryptionProcesses++;
-                continue;
-            }
-            try {
-                doReEncryptFile(file);
-                successfulReEncryptionProcesses++;
-            } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException |
-                    InvalidKeySpecException e) {
-                logger.error(e.getMessage(), e);
-                logger.error("Skipping file {}, due to major error.", file.getEgaId());
-            } catch (OutputFileAlreadyExists outputFileAlreadyExists) {
-                logger.error("Skipping file {}, re encrypted file already exists on result path. If you want to " +
-                        "override it, please enable option 'file-re-encrypt.config.override'.", file.getEgaId());
-            } catch (OriginalEncryptedMd5Mismatch originalEncryptedMd5Mismatch) {
-                logger.error("Skipping file {}, md5 file mismatch.", file.getEgaId());
+            } else {
+                try {
+                    doReEncryptFile(file);
+                    successfulReEncryptionProcesses++;
+                } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException |
+                        InvalidKeySpecException e) {
+                    logger.error(e.getMessage(), e);
+                    logger.error("Skipping file {}, due to major error.", file.getEgaId());
+                } catch (OutputFileAlreadyExists outputFileAlreadyExists) {
+                    logger.error("Skipping file {}, re encrypted file already exists on result path. If you want to " +
+                            "override it, please enable option 'file-re-encrypt.config.override'.", file.getEgaId());
+                } catch (OriginalEncryptedMd5Mismatch originalEncryptedMd5Mismatch) {
+                    logger.error("Skipping file {}, md5 file mismatch.", file.getEgaId());
+                }
             }
         }
         return successfulReEncryptionProcesses;
+    }
+
+    private void doArchiveOfExistingReEncryptedFile(EgaPublishedFile file, ReEncryptionFile reEncryptedFile) {
+        if (reEncryptedFile.getFireArchiveId() != null) {
+            logger.info("File {} has been inserted in pro-filer already", file.getEgaId());
+        } else {
+            Long proFilerId = insertIntoProFiler(reEncryptedFile.getEgaId(),
+                    new File(reEncryptedFile.getNewPath()), reEncryptedFile.getStatus(),
+                    reEncryptedFile.getEncryptedMd5());
+            if (proFilerId != null) {
+                reEncryptService.updateFireArchiveId(file.getEgaId(), proFilerId);
+            }
+        }
     }
 
     private List<String> findMissingIds(String[] fileIds, List<EgaPublishedFile> files) {
@@ -156,7 +171,7 @@ public class FileReEncryptService {
             final ReEncryptionReport report = ReEncryption.reEncrypt(fileStream, originalPassword, fileOut, newPassword,
                     overrideFile);
             ReEncryptionFile.ReEncryptionStatus status = calculateProcessStatus(file, fileInFire, report);
-            Long proFilerId = insertIntoProFiler(file.getEgaId(), fileOut, status, report);
+            Long proFilerId = insertIntoProFiler(file.getEgaId(), fileOut, status, report.getReEncryptedMd5());
             insertInReEncryption(file, fileOut, newPassword, proFilerId,
                     status, report);
         }
@@ -188,7 +203,7 @@ public class FileReEncryptService {
     }
 
     private Long insertIntoProFiler(String egaId, File fileOut, ReEncryptionFile.ReEncryptionStatus status,
-                                    ReEncryptionReport report) {
+                                    String reEncryptedMd5) {
         if (!properties.isInsertProfiler()) {
             logger.warn("Insert to pro-filer is disabled, file {} has not been inserted.", egaId);
             return null;
@@ -198,11 +213,15 @@ public class FileReEncryptService {
                     "inserted into pro-filer", egaId);
             return null;
         }
+        if (!fileOut.exists()) {
+            logger.error("File {} could not be found at {}", egaId, fileOut.getAbsolutePath());
+            return null;
+        }
 
         // We are not gonna insert the file id on the file table at least at the moment.
-        final long number = proFilerService.insertFile(null, fileOut, report.getReEncryptedMd5());
+        final long number = proFilerService.insertFile(null, fileOut, reEncryptedMd5);
         final long proFilerId = proFilerService.insertArchive(number, properties.getRelativePath(), fileOut,
-                report.getReEncryptedMd5());
+                reEncryptedMd5);
         logger.info("File {} has been inserted into pro-filer.", egaId);
         return proFilerId;
     }
@@ -211,6 +230,7 @@ public class FileReEncryptService {
                                       ReEncryptionFile.ReEncryptionStatus status, ReEncryptionReport report) {
         reEncryptService.insert(new ReEncryptionFile(
                 file.getEgaId(),
+                file.getDatasetId(),
                 report.getEncryptedMd5(),
                 report.getUnencryptedMd5(),
                 report.getReEncryptedMd5(),

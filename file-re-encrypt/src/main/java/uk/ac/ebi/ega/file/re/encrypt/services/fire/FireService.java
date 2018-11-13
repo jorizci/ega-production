@@ -38,6 +38,8 @@ public class FireService {
 
     private static final String GET_URL = "OBJECT_GET";
 
+    private static final String HEAD_URL = "OBJECT_HEAD";
+
     private static final String OBJECT_MD5 = "OBJECT_MD5";
 
     private FireProperties fireProperties;
@@ -53,7 +55,7 @@ public class FireService {
                 connection = prepareConnection(file, new URL(fireProperties.getUrl()));
                 if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     Map<String, String> map = parseConnection(connection);
-                    return new DirectFireFile(map.get(GET_URL), map.get(OBJECT_MD5));
+                    return new FireDirectFile(map.get(GET_URL), map.get(HEAD_URL), map.get(OBJECT_MD5));
                 } else {
                     logger.info("Fire Direct returned {}", connection.getResponseCode());
                 }
@@ -87,7 +89,7 @@ public class FireService {
                 }
                 map.put(fields[0], fields[1]);
             }
-            if (!(map.containsKey(GET_URL) && map.containsKey(OBJECT_MD5))) {
+            if (!(map.containsKey(GET_URL) && map.containsKey(HEAD_URL) && map.containsKey(OBJECT_MD5))) {
                 throw new ParseException(buffer.toString(), 0);
             }
         }

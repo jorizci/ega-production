@@ -19,19 +19,18 @@ package uk.ac.ebi.ega.file.re.encrypt.services.fire;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Base64;
 
-public class DirectFireFile implements IFireFile {
+public class FireDirectFile implements IFireFile {
 
-    private final URL url;
+    private final String url;
+
+    private final String headUrl;
 
     private final String md5;
 
-    public DirectFireFile(String url, String md5) throws MalformedURLException {
-        this.url = new URL(url);
+    public FireDirectFile(String url, String headUrl, String md5) {
+        this.url = url;
+        this.headUrl = headUrl;
         this.md5 = md5;
     }
 
@@ -42,17 +41,7 @@ public class DirectFireFile implements IFireFile {
 
     @Override
     public InputStream getStream() throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-        enableBasicAuthIfRequired(connection);
-        return connection.getInputStream();
-    }
-
-    private void enableBasicAuthIfRequired(HttpURLConnection connection) {
-        if (url.getUserInfo() != null) {
-            String basicAuth = "Basic " + new String(Base64.getEncoder().encode(url.getUserInfo().getBytes()));
-            connection.setRequestProperty("Authorization", basicAuth);
-        }
+        return new FireDirectInputStream(url, headUrl);
     }
 
 }

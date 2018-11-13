@@ -23,6 +23,7 @@ import uk.ac.ebi.ega.database.commons.models.ReEncryptDataset;
 import uk.ac.ebi.ega.database.commons.models.ReEncryptionFile;
 import uk.ac.ebi.ega.database.commons.utils.Batch;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class ReEncryptService {
@@ -49,6 +50,7 @@ public class ReEncryptService {
     public void insert(ReEncryptionFile file) {
         String query = "INSERT INTO processed_files(" +
                 "file_id, " +
+                "dataset_id, " +
                 "original_encrypted_md5, " +
                 "plain_md5, " +
                 "encrypted_md5, " +
@@ -63,6 +65,7 @@ public class ReEncryptService {
                 "pro_fire_archive_id) " +
                 "VALUES(" +
                 ":file_id, " +
+                ":dataset_id, " +
                 ":original_encrypted_md5, " +
                 ":plain_md5, " +
                 ":encrypted_md5, " +
@@ -77,6 +80,7 @@ public class ReEncryptService {
                 ":pro_fire_archive_id)";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("file_id", file.getEgaId());
+        parameters.addValue("dataset_id", file.getEgaId());
         parameters.addValue("original_encrypted_md5", file.getOriginalEncryptedMd5());
         parameters.addValue("plain_md5", file.getPlainMd5());
         parameters.addValue("encrypted_md5", file.getEncryptedMd5());
@@ -101,12 +105,26 @@ public class ReEncryptService {
                 ":dataset_id, " +
                 ":total_files, " +
                 ":processed_files " +
-                ")";
+                ") " +
+                "ON CONFLICT (dataset_id) " +
+                "DO " +
+                "UPDATE " +
+                "SET total_files = :total_files, processed_files = :processed_files";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("dataset_id", reEncryptDataset.getEgaId());
         parameters.addValue("total_files", reEncryptDataset.getTotalFiles());
         parameters.addValue("processed_files", reEncryptDataset.getTotalSuccesses());
         reEncryptTemplate.update(query, parameters);
+    }
+
+    public ReEncryptionFile findReEncryptedFile(String egaFileId) {
+        List<String> ids = Arrays.asList(egaFileId);
+        final List<ReEncryptionFile> reEncryptionFiles = doFindReEncryptedFilesBatch(ids);
+        if (reEncryptionFiles.isEmpty()) {
+            return null;
+        } else {
+            return reEncryptionFiles.get(0);
+        }
     }
 
     public List<ReEncryptionFile> findReEncryptedFiles(List<String> egaFileIds) {
@@ -117,12 +135,13 @@ public class ReEncryptService {
     private List<ReEncryptionFile> doFindReEncryptedFilesBatch(List<String> egaFileIds) {
         String query = "SELECT " +
                 "file_id, " +
+                "dataset_id, " +
                 "original_encrypted_md5, " +
                 "plain_md5, " +
                 "encrypted_md5, " +
                 "\"key\", " +
                 "original_path, " +
-                "file_name, " +
+                "file_name,        " +
                 "new_path, " +
                 "previous_size, " +
                 "\"size\", " +
@@ -135,6 +154,7 @@ public class ReEncryptService {
         List<ReEncryptionFile> files = reEncryptTemplate.query(query, parameters, (resultSet, i) ->
                 new ReEncryptionFile(
                         resultSet.getString("file_id"),
+                        resultSet.getString("dataset_id"),
                         resultSet.getString("original_encrypted_md5"),
                         resultSet.getString("plain_md5"),
                         resultSet.getString("encrypted_md5"),
@@ -149,5 +169,15 @@ public class ReEncryptService {
                         resultSet.getTimestamp("creation_date"))
         );
         return files;
+    }
+
+    public void updateFireArchiveId(String egaId, Long proFilerId) {
+        String query = "UPDATE re_encryption.processed_files" +
+                "SET pro_fire_archive_id=:pro_filer_id" +
+                "WHERE file_id=:file_id";
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue("file_id", egaId);
+        parameters.addValue("pro_filer_id", proFilerId);
+        reEncryptTemplate.update(query, parameters);
     }
 }
