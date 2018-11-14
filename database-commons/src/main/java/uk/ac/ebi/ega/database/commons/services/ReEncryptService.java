@@ -80,7 +80,7 @@ public class ReEncryptService {
                 ":pro_fire_archive_id)";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("file_id", file.getEgaId());
-        parameters.addValue("dataset_id", file.getEgaId());
+        parameters.addValue("dataset_id", file.getDatasetId());
         parameters.addValue("original_encrypted_md5", file.getOriginalEncryptedMd5());
         parameters.addValue("plain_md5", file.getPlainMd5());
         parameters.addValue("encrypted_md5", file.getEncryptedMd5());
@@ -164,7 +164,8 @@ public class ReEncryptService {
                         resultSet.getString("new_path"),
                         resultSet.getLong("previous_size"),
                         resultSet.getLong("size"),
-                        resultSet.getLong("pro_fire_archive_id"),
+                        resultSet.getObject("pro_fire_archive_id") != null ? resultSet.getLong("pro_fire_archive_id") :
+                                null,
                         ReEncryptionFile.ReEncryptionStatus.valueOf(resultSet.getString("status")),
                         resultSet.getTimestamp("creation_date"))
         );
@@ -172,8 +173,8 @@ public class ReEncryptService {
     }
 
     public void updateFireArchiveId(String egaId, Long proFilerId) {
-        String query = "UPDATE re_encryption.processed_files" +
-                "SET pro_fire_archive_id=:pro_filer_id" +
+        String query = "UPDATE re_encryption.processed_files " +
+                "SET pro_fire_archive_id=:pro_filer_id " +
                 "WHERE file_id=:file_id";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("file_id", egaId);

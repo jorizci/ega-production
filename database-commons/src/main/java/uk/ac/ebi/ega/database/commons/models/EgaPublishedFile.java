@@ -17,18 +17,7 @@
  */
 package uk.ac.ebi.ega.database.commons.models;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 public class EgaPublishedFile {
-
-    private final static Set<String> knownFormats = new HashSet<>(Arrays.asList(
-            "cip", "gpg",
-            "txt", "gz", "tar", "rar", "zip", "7zip",
-            "vcf", "tbi", "bam", "cram",
-            "fasta", "fas", "fa", "seq", "fsa", "ffn", "faa", "mpfa", "frn"
-    ));
 
     private String datasetId;
 
@@ -68,26 +57,4 @@ public class EgaPublishedFile {
         return unencryptedMd5;
     }
 
-    public String getFileExtensions() {
-        String components[] = fileName.split("\\.");
-        if (components.length == 1) {
-            return "";
-        }
-        StringBuilder stringBuilder = new StringBuilder();
-        // Skip file name, assume 0 is name for sure, now we advance until we find a known extension
-        int i = 1;
-        for (; i < components.length; i++) {
-            if (knownFormats.contains(components[i])) {
-                break;
-            }
-        }
-        // Now we continue until we find the encrypted format adding all the file extensions
-        for (; i < components.length; i++) {
-            if (components[i].equals("cip") || components[i].equals("gpg")) {
-                break;
-            }
-            stringBuilder.append(".").append(components[i]);
-        }
-        return stringBuilder.toString();
-    }
 }

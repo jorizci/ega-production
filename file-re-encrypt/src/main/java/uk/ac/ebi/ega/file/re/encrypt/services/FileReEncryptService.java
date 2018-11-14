@@ -26,6 +26,7 @@ import uk.ac.ebi.ega.database.commons.models.ReEncryptionFile;
 import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.database.commons.services.ProFilerService;
 import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
+import uk.ac.ebi.ega.database.commons.utils.FileUtils;
 import uk.ac.ebi.ega.encryption.core.ReEncryption;
 import uk.ac.ebi.ega.encryption.core.ReEncryptionReport;
 import uk.ac.ebi.ega.encryption.core.exception.OutputFileAlreadyExists;
@@ -178,7 +179,7 @@ public class FileReEncryptService {
     }
 
     private File generateFileOut(EgaPublishedFile file) {
-        return new File(properties.getOutputPath(), file.getEgaId() + file.getFileExtensions() + ".cip");
+        return new File(properties.getOutputPath(), file.getEgaId() + FileUtils.getType(file.getFileName()) + ".cip");
     }
 
     private char[] getOriginalGpgPassword() throws IOException {
@@ -206,11 +207,6 @@ public class FileReEncryptService {
                                     String reEncryptedMd5) {
         if (!properties.isInsertProfiler()) {
             logger.warn("Insert to pro-filer is disabled, file {} has not been inserted.", egaId);
-            return null;
-        }
-        if (status == ReEncryptionFile.ReEncryptionStatus.MISMATCH) {
-            logger.warn("File {} has been re-encrypted correctly but unencrypted md5 does not match. It will not be " +
-                    "inserted into pro-filer", egaId);
             return null;
         }
         if (!fileOut.exists()) {

@@ -22,6 +22,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import uk.ac.ebi.ega.database.commons.utils.Batch;
+import uk.ac.ebi.ega.database.commons.utils.FileUtils;
 
 import java.io.File;
 import java.sql.Timestamp;
@@ -64,7 +65,7 @@ public class ProFilerService {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("name", file.getName());
         parameters.addValue("md5", md5);
-        parameters.addValue("type", "GPG_ENCRYPTED");
+        parameters.addValue("type", FileUtils.getType(file.getName()));
         parameters.addValue("size", file.length());
         parameters.addValue("host_id", 1);
         parameters.addValue("created", date);
