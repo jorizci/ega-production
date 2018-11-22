@@ -23,10 +23,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import uk.ac.ebi.ega.database.commons.services.AuditService;
-import uk.ac.ebi.ega.database.commons.services.EraProService;
 import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.database.commons.services.ProFilerService;
 import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
@@ -40,10 +38,6 @@ import java.util.Optional;
 
 @Configuration
 public class FileReEncryptConfiguration {
-
-    @Autowired
-    @Qualifier("erapro_jdbc_template")
-    private JdbcTemplate eraproTemplate;
 
     @Autowired
     @Qualifier("audit_jdbc_template")
@@ -90,11 +84,6 @@ public class FileReEncryptConfiguration {
     @Bean
     public AuditService auditService() {
         return new AuditService(auditTemplate);
-    }
-
-    @Bean
-    public EraProService eraProService() {
-        return new EraProService(eraproTemplate);
     }
 
     @Bean

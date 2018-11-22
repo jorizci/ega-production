@@ -15,53 +15,38 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.database.commons.models;
+package uk.ac.ebi.ega.file.re.encrypt.model;
 
-public class ReEncryptDataset {
-
-    private final String egaId;
-
-    private final int total;
+public class ReEncryptionProcessReport {
 
     private final int success;
 
-    private final int wrongMd5;
-
-    private final int conflict;
+    private final int md5;
 
     private final int errors;
 
-    public ReEncryptDataset(String egaId, int total, int success, int wrongMd5, int conflict, int errors) {
-        this.egaId = egaId;
-        this.total = total;
-        this.success = success;
-        this.wrongMd5 = wrongMd5;
-        this.conflict = conflict;
-        this.errors = errors;
-    }
+    private final int conflict;
 
-    public String getEgaId() {
-        return egaId;
+    public ReEncryptionProcessReport(int success, int md5, int errors, int conflict) {
+        this.success = success;
+        this.md5 = md5;
+        this.errors = errors;
+        this.conflict = conflict;
     }
 
     public int getSuccess() {
         return success;
     }
 
-    public int getTotal() {
-        return total;
-    }
-
-    public int getWrongMd5() {
-        return wrongMd5;
-    }
-
-    public int getConflict() {
-        return conflict;
+    public int getMd5() {
+        return md5;
     }
 
     public int getErrors() {
         return errors;
     }
 
+    public int getConflict() {
+        return conflict;
+    }
 }

@@ -100,20 +100,35 @@ public class ReEncryptService {
         String query = "INSERT INTO re_encryption.processed_datasets (" +
                 "dataset_id, " +
                 "total_files, " +
-                "processed_files) " +
+                "success, " +
+                "wrong_md5, " +
+                "conflict, " +
+                "errors" +
+                ") " +
                 "VALUES(" +
                 ":dataset_id, " +
                 ":total_files, " +
-                ":processed_files " +
+                ":success, " +
+                ":wrong_md5, " +
+                ":conflict, " +
+                ":errors" +
                 ") " +
                 "ON CONFLICT (dataset_id) " +
                 "DO " +
                 "UPDATE " +
-                "SET total_files = :total_files, processed_files = :processed_files";
+                "SET " +
+                "total_files = :total_files, " +
+                "success = :success, " +
+                "wrong_md5 = :wrong_md5, " +
+                "conflict = :conflict, " +
+                "errors = :errors";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("dataset_id", reEncryptDataset.getEgaId());
-        parameters.addValue("total_files", reEncryptDataset.getTotalFiles());
-        parameters.addValue("processed_files", reEncryptDataset.getTotalSuccesses());
+        parameters.addValue("total_files", reEncryptDataset.getTotal());
+        parameters.addValue("success", reEncryptDataset.getSuccess());
+        parameters.addValue("wrong_md5", reEncryptDataset.getWrongMd5());
+        parameters.addValue("conflict", reEncryptDataset.getConflict());
+        parameters.addValue("errors", reEncryptDataset.getErrors());
         reEncryptTemplate.update(query, parameters);
     }
 

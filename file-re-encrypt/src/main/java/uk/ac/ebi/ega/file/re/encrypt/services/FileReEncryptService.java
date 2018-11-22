@@ -29,15 +29,19 @@ import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
 import uk.ac.ebi.ega.database.commons.utils.FileUtils;
 import uk.ac.ebi.ega.encryption.core.ReEncryption;
 import uk.ac.ebi.ega.encryption.core.ReEncryptionReport;
-import uk.ac.ebi.ega.encryption.core.exception.OutputFileAlreadyExists;
 import uk.ac.ebi.ega.file.re.encrypt.exceptions.OriginalEncryptedMd5Mismatch;
+import uk.ac.ebi.ega.file.re.encrypt.exceptions.OutputFileAlreadyExists;
+import uk.ac.ebi.ega.file.re.encrypt.model.ReEncryptionProcessReport;
 import uk.ac.ebi.ega.file.re.encrypt.properties.FileReEncryptProperties;
 import uk.ac.ebi.ega.file.re.encrypt.services.fire.FireService;
 import uk.ac.ebi.ega.file.re.encrypt.services.fire.IFireFile;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -84,55 +88,75 @@ public class FileReEncryptService {
 
         logger.info("Starting re encryption process for dataset {}, total files to re-encrypt {}", egaId,
                 datasetFiles.size());
-        int totalSuccesses = doReEncryptFiles(datasetFiles);
-        doReport(egaId, datasetFiles, totalSuccesses);
+        final ReEncryptionProcessReport report = doReEncryptOrArchiveFiles(datasetFiles);
+        doReport(egaId, datasetFiles, report);
     }
 
-    private void doReport(String egaId, List<EgaPublishedFile> datasetFiles, int totalSuccesses) {
-        if (totalSuccesses == datasetFiles.size()) {
+    private void doReport(String egaId, List<EgaPublishedFile> datasetFiles, ReEncryptionProcessReport report) {
+        if (report.getSuccess() == datasetFiles.size()) {
             logger.info("Re encryption process for dataset {} finished correctly.", egaId);
         } else {
             logger.error("Re encryption process for dataset {} finished but {} were not processed correctly.", egaId,
-                    datasetFiles.size() - totalSuccesses);
+                    datasetFiles.size() - report.getSuccess());
         }
-        reEncryptService.insert(new ReEncryptDataset(egaId, totalSuccesses, datasetFiles.size()));
+        reEncryptService.insert(new ReEncryptDataset(egaId, datasetFiles.size(), report.getSuccess(),
+                report.getMd5(), report.getConflict(), report.getErrors()));
     }
 
-    public int reEncryptFiles(String... fileIds) {
+    public ReEncryptionProcessReport reEncryptFiles(String... fileIds) {
         final List<EgaPublishedFile> files = peaService.getPublishedFiles(fileIds);
 
         if (files.size() != fileIds.length) {
             logger.error("Could not find the following ids {} on Pea.", findMissingIds(fileIds, files));
             System.exit(1);
         }
-        return doReEncryptFiles(files);
+        return doReEncryptOrArchiveFiles(files);
     }
 
-    public int doReEncryptFiles(List<EgaPublishedFile> files) {
-        int successfulReEncryptionProcesses = 0;
+    public ReEncryptionProcessReport doReEncryptOrArchiveFiles(List<EgaPublishedFile> files) {
+        int success = 0;
+        int md5 = 0;
+        int errors = 0;
+        int conflict = 0;
+        int i = 0;
         for (EgaPublishedFile file : files) {
-            final ReEncryptionFile reEncryptedFile = reEncryptService.findReEncryptedFile(file.getEgaId());
-            if (reEncryptedFile != null) {
-                logger.info("Skipping file {} re-encryption. It has been processed already.", file.getEgaId());
-                doArchiveOfExistingReEncryptedFile(file, reEncryptedFile);
-                successfulReEncryptionProcesses++;
-            } else {
-                try {
-                    doReEncryptFile(file);
-                    successfulReEncryptionProcesses++;
-                } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException |
-                        InvalidKeySpecException e) {
-                    logger.error(e.getMessage(), e);
-                    logger.error("Skipping file {}, due to major error.", file.getEgaId());
-                } catch (OutputFileAlreadyExists outputFileAlreadyExists) {
-                    logger.error("Skipping file {}, re encrypted file already exists on result path. If you want to " +
-                            "override it, please enable option 'file-re-encrypt.config.override'.", file.getEgaId());
-                } catch (OriginalEncryptedMd5Mismatch originalEncryptedMd5Mismatch) {
-                    logger.error("Skipping file {}, md5 file mismatch.", file.getEgaId());
+            logger.info("Processing file {}, {}/{}", file.getEgaId(), i + 1, files.size());
+            i++;
+            try {
+                final ReEncryptionFile reEncryptionFile = doReEncryptOrArchive(file);
+                if (reEncryptionFile.getStatus() == ReEncryptionFile.ReEncryptionStatus.CORRECT) {
+                    success++;
+                } else {
+                    md5++;
                 }
+            } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException |
+                    InvalidKeySpecException | RuntimeException e) {
+                errors++;
+                logger.error(e.getMessage(), e);
+                logger.error("Skipping file {} - {}, due to major error.", file.getEgaId(), file.getFileName());
+            } catch (OutputFileAlreadyExists outputFileAlreadyExists) {
+                conflict++;
+                logger.error("Skipping file {}, re encrypted file is being processed by another process." +
+                        file.getEgaId());
+            } catch (OriginalEncryptedMd5Mismatch originalEncryptedMd5Mismatch) {
+                errors++;
+                logger.error("Skipping file {}, encrypted md5 file mismatch.", file.getEgaId());
             }
         }
-        return successfulReEncryptionProcesses;
+        return new ReEncryptionProcessReport(success, md5, errors, conflict);
+    }
+
+    private ReEncryptionFile doReEncryptOrArchive(EgaPublishedFile file) throws InvalidAlgorithmParameterException,
+            InvalidKeyException, IOException, PGPException, OutputFileAlreadyExists, InvalidKeySpecException,
+            OriginalEncryptedMd5Mismatch {
+        ReEncryptionFile reEncryptedFile = reEncryptService.findReEncryptedFile(file.getEgaId());
+        if (reEncryptedFile != null) {
+            logger.info("Skipping file {} re-encryption. It has been processed already.", file.getEgaId());
+            doArchiveOfExistingReEncryptedFile(file, reEncryptedFile);
+            return reEncryptedFile;
+        } else {
+            return doReEncryptFile(file);
+        }
     }
 
     private void doArchiveOfExistingReEncryptedFile(EgaPublishedFile file, ReEncryptionFile reEncryptedFile) {
@@ -159,27 +183,41 @@ public class FileReEncryptService {
         return missingIds;
     }
 
-    private void doReEncryptFile(EgaPublishedFile file) throws InvalidAlgorithmParameterException,
+    private ReEncryptionFile doReEncryptFile(EgaPublishedFile file) throws InvalidAlgorithmParameterException,
             InvalidKeyException, IOException, PGPException, OutputFileAlreadyExists, InvalidKeySpecException,
             OriginalEncryptedMd5Mismatch {
+        final IFireFile fileInFire = fireService.getFile(file);
         File fileOut = generateFileOut(file);
         char[] originalPassword = getOriginalGpgPassword();
         char[] newPassword = keyGenerator.generateKey();
-        boolean overrideFile = properties.isOverride();
 
-        final IFireFile fileInFire = fireService.getFile(file);
-        try (InputStream fileStream = fileInFire.getStream()) {
-            final ReEncryptionReport report = ReEncryption.reEncrypt(fileStream, originalPassword, fileOut, newPassword,
-                    overrideFile);
+        try (InputStream input = fileInFire.getStream();
+             OutputStream output = new FileOutputStream(fileOut)
+        ) {
+            final ReEncryptionReport report = ReEncryption.reEncrypt(input, originalPassword, output, newPassword);
             ReEncryptionFile.ReEncryptionStatus status = calculateProcessStatus(file, fileInFire, report);
             Long proFilerId = insertIntoProFiler(file.getEgaId(), fileOut, status, report.getReEncryptedMd5());
-            insertInReEncryption(file, fileOut, newPassword, proFilerId,
-                    status, report);
+            return insertInReEncryption(file, fileOut, newPassword, proFilerId, status, report);
+        } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException | InvalidKeySpecException |
+                OriginalEncryptedMd5Mismatch |  RuntimeException e) {
+            // We delete the temporal file
+            fileOut.delete();
+            throw e;
         }
     }
 
-    private File generateFileOut(EgaPublishedFile file) {
-        return new File(properties.getOutputPath(), file.getEgaId() + FileUtils.getType(file.getFileName()) + ".cip");
+    private File generateFileOut(EgaPublishedFile file) throws IOException, OutputFileAlreadyExists {
+        File fileOut = new File(properties.getOutputPath(),
+                file.getEgaId() + FileUtils.getType(file.getFileName()) + ".cip");
+        try {
+            if (fileOut.createNewFile()) {
+                return fileOut;
+            }
+        } catch (IOException e) {
+            logger.error("Io exception creating file {}", fileOut.getAbsolutePath());
+            throw e;
+        }
+        throw new OutputFileAlreadyExists(fileOut);
     }
 
     private char[] getOriginalGpgPassword() throws IOException {
@@ -222,9 +260,10 @@ public class FileReEncryptService {
         return proFilerId;
     }
 
-    private void insertInReEncryption(EgaPublishedFile file, File fileOut, char[] newPassword, Long fireArchiveId,
-                                      ReEncryptionFile.ReEncryptionStatus status, ReEncryptionReport report) {
-        reEncryptService.insert(new ReEncryptionFile(
+    private ReEncryptionFile insertInReEncryption(EgaPublishedFile file, File fileOut, char[] newPassword,
+                                                  Long fireArchiveId, ReEncryptionFile.ReEncryptionStatus status,
+                                                  ReEncryptionReport report) {
+        final ReEncryptionFile reEncryptionFile = new ReEncryptionFile(
                 file.getEgaId(),
                 file.getDatasetId(),
                 report.getEncryptedMd5(),
@@ -237,7 +276,9 @@ public class FileReEncryptService {
                 file.getSize(),
                 fileOut.length(),
                 fireArchiveId,
-                status));
+                status);
+        reEncryptService.insert(reEncryptionFile);
+        return reEncryptionFile;
     }
 
 }

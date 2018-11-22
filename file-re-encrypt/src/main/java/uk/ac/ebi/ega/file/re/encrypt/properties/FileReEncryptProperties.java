@@ -28,8 +28,6 @@ public class FileReEncryptProperties {
 
     private String gpgKeyPath;
 
-    private boolean override;
-
     private boolean insertProfiler;
 
     public String getStagingPath() {
@@ -58,14 +56,6 @@ public class FileReEncryptProperties {
 
     public void setGpgKeyPath(String gpgKeyPath) {
         this.gpgKeyPath = gpgKeyPath;
-    }
-
-    public boolean isOverride() {
-        return override;
-    }
-
-    public void setOverride(boolean override) {
-        this.override = override;
     }
 
     public boolean isInsertProfiler() {

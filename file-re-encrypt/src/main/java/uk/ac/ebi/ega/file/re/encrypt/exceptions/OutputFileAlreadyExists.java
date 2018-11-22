@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.encryption.core.exception;
+package uk.ac.ebi.ega.file.re.encrypt.exceptions;
 
 import java.io.File;
 

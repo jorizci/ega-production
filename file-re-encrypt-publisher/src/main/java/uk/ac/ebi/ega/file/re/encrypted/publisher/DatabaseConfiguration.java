@@ -17,14 +17,13 @@
  */
 package uk.ac.ebi.ega.file.re.encrypted.publisher;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-
-import javax.sql.DataSource;
 
 @Configuration
 public class DatabaseConfiguration {
@@ -36,8 +35,9 @@ public class DatabaseConfiguration {
     }
 
     @Bean("audit_datasource")
-    public DataSource auditDataSource() {
-        return auditDataSourceProperties().initializeDataSourceBuilder().build();
+    @ConfigurationProperties("file-re-encrypt.datasource.audit.hikari")
+    public HikariDataSource auditDataSource() {
+        return auditDataSourceProperties().initializeDataSourceBuilder().type(HikariDataSource.class).build();
     }
 
     @Bean("audit_jdbc_template")
@@ -57,8 +57,9 @@ public class DatabaseConfiguration {
     }
 
     @Bean("re_encrypt_datasource")
-    public DataSource reEncryptDataSource() {
-        return reEncryptDataSourceProperties().initializeDataSourceBuilder().build();
+    @ConfigurationProperties("file-re-encrypt.datasource.re-encrypt.hikari")
+    public HikariDataSource reEncryptDataSource() {
+        return reEncryptDataSourceProperties().initializeDataSourceBuilder().type(HikariDataSource.class).build();
     }
 
     @Bean("re_encrypt_jdbc_template")
@@ -78,8 +79,9 @@ public class DatabaseConfiguration {
     }
 
     @Bean("pro_filer_datasource")
-    public DataSource proFilerDataSource() {
-        return proFilerDataSourceProperties().initializeDataSourceBuilder().build();
+    @ConfigurationProperties("file-re-encrypt.datasource.pro-filer.hikari")
+    public HikariDataSource proFilerDataSource() {
+        return proFilerDataSourceProperties().initializeDataSourceBuilder().type(HikariDataSource.class).build();
     }
 
     @Bean("pro_filer_jdbc_template")
@@ -99,8 +101,9 @@ public class DatabaseConfiguration {
     }
 
     @Bean("pea_datasource")
-    public DataSource peaDataSource() {
-        return peaDataSourceProperties().initializeDataSourceBuilder().build();
+    @ConfigurationProperties("file-re-encrypt.datasource.pea.hikari")
+    public HikariDataSource peaDataSource() {
+        return peaDataSourceProperties().initializeDataSourceBuilder().type(HikariDataSource.class).build();
     }
 
     @Bean("pea_jdbc_template")

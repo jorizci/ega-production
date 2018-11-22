@@ -22,12 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ega.encryption.core.encryption.AesAlexander;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
-import uk.ac.ebi.ega.encryption.core.exception.OutputFileAlreadyExists;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,23 +43,10 @@ public class ReEncryption {
     //Delta size for report status, 1G
     private static final long DELTA_SIZE = GBYTE;
 
-    public static ReEncryptionReport reEncrypt(File inputFile, char[] passwordInput, File outputFile,
-                                               char[] passwordOutput, boolean overwrite) throws IOException,
-            OutputFileAlreadyExists, PGPException, InvalidAlgorithmParameterException, InvalidKeySpecException,
-            InvalidKeyException {
-        try (InputStream inputStream = new FileInputStream(inputFile);) {
-            return reEncrypt(inputStream, passwordInput, outputFile, passwordOutput, overwrite);
-        }
-    }
-
-    public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, File outputFile,
-                                               char[] passwordOutput, boolean overwrite)
-            throws IOException, PGPException, OutputFileAlreadyExists, InvalidAlgorithmParameterException,
+    public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, OutputStream outputFile,
+                                               char[] passwordOutput)
+            throws IOException, PGPException, InvalidAlgorithmParameterException,
             InvalidKeySpecException, InvalidKeyException {
-
-        if (!overwrite && outputFile.exists()) {
-            throw new OutputFileAlreadyExists(outputFile);
-        }
 
         MessageDigest messageDigestEncrypted = null;
         MessageDigest messageDigest = null;
@@ -80,8 +63,7 @@ public class ReEncryption {
                 InputStream digestedInputStream = new DigestInputStream(inputFile, messageDigestEncrypted);
                 InputStream decryptedStream = PgpSymmetric.decrypt(digestedInputStream, passwordInput);
                 InputStream digestedDecryptedStream = new DigestInputStream(decryptedStream, messageDigest);
-                OutputStream outputStream = new FileOutputStream(outputFile);
-                OutputStream digestedOutputStream = new DigestOutputStream(outputStream, messageDigestReEncrypted);
+                OutputStream digestedOutputStream = new DigestOutputStream(outputFile, messageDigestReEncrypted);
                 OutputStream cypherOutputStream = AesAlexander.encrypt(passwordOutput, digestedOutputStream);
         ) {
             final long unencryptedSize = doReEncryption(digestedDecryptedStream, cypherOutputStream);

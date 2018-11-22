@@ -27,7 +27,7 @@ public class FileUtils {
             "cip", "gpg",
             "txt", "gz", "tar", "rar", "zip", "7zip",
             "vcf", "tbi", "bam", "cram",
-            "fasta", "fas", "fa", "seq", "fsa", "ffn", "faa", "mpfa", "frn",
+            "fastq", "fasta", "fas", "fa", "seq", "fsa", "ffn", "faa", "mpfa", "frn",
             "gtc",
             "bgen"
     ));
