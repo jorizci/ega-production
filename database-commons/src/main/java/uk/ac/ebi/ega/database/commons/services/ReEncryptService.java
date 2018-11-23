@@ -124,11 +124,11 @@ public class ReEncryptService {
                 "errors = :errors";
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("dataset_id", reEncryptDataset.getEgaId());
-        parameters.addValue("total_files", reEncryptDataset.getTotal());
-        parameters.addValue("success", reEncryptDataset.getSuccess());
-        parameters.addValue("wrong_md5", reEncryptDataset.getWrongMd5());
-        parameters.addValue("conflict", reEncryptDataset.getConflict());
-        parameters.addValue("errors", reEncryptDataset.getErrors());
+        parameters.addValue("total_files", reEncryptDataset.getFileTotal());
+        parameters.addValue("success", reEncryptDataset.getSuccessTotal());
+        parameters.addValue("wrong_md5", reEncryptDataset.getWrongMd5Total());
+        parameters.addValue("conflict", reEncryptDataset.getConflictTotal());
+        parameters.addValue("errors", reEncryptDataset.getErrorTotal());
         reEncryptTemplate.update(query, parameters);
     }
 

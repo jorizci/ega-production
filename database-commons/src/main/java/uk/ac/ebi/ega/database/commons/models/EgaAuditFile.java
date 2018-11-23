@@ -57,6 +57,7 @@ public class EgaAuditFile {
         this.box = box;
         this.unencryptedMd5 = unencryptedMd5;
         this.encryptedMd5 = encryptedMd5;
+        this.fileSize = fileSize;
     }
 
     private static String generateFileTypeFromFileName(String filename) {
@@ -133,18 +134,4 @@ public class EgaAuditFile {
         return fileSize;
     }
 
-    public String getFileExtensions() {
-        String components[] = submittedFileName.split("\\.");
-        if (components.length == 1) {
-            return "";
-        }
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 1; i < components.length; i++) {
-            if (components[i].equals("cip") || components[i].equals("gpg")) {
-                break;
-            }
-            stringBuilder.append(".").append(components[i]);
-        }
-        return stringBuilder.toString();
-    }
 }

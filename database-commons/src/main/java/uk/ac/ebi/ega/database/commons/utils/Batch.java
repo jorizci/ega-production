@@ -36,7 +36,9 @@ public class Batch {
                 batch = new ArrayList<>();
             }
         }
-        batches.add(batch);
+        if (!batch.isEmpty()) {
+            batches.add(batch);
+        }
         return batches;
     }
 

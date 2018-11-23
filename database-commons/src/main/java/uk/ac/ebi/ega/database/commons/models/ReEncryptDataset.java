@@ -21,47 +21,47 @@ public class ReEncryptDataset {
 
     private final String egaId;
 
-    private final int total;
+    private final int fileTotal;
 
-    private final int success;
+    private final int successTotal;
 
-    private final int wrongMd5;
+    private final int wrongMd5Total;
 
-    private final int conflict;
+    private final int conflictTotal;
 
-    private final int errors;
+    private final int errorTotal;
 
-    public ReEncryptDataset(String egaId, int total, int success, int wrongMd5, int conflict, int errors) {
+    public ReEncryptDataset(String egaId, int totalFiles, int successTotal, int wrongMd5Total, int conflictTotal, int errorTotal) {
         this.egaId = egaId;
-        this.total = total;
-        this.success = success;
-        this.wrongMd5 = wrongMd5;
-        this.conflict = conflict;
-        this.errors = errors;
+        this.fileTotal = totalFiles;
+        this.successTotal = successTotal;
+        this.wrongMd5Total = wrongMd5Total;
+        this.conflictTotal = conflictTotal;
+        this.errorTotal = errorTotal;
     }
 
     public String getEgaId() {
         return egaId;
     }
 
-    public int getSuccess() {
-        return success;
+    public int getSuccessTotal() {
+        return successTotal;
     }
 
-    public int getTotal() {
-        return total;
+    public int getFileTotal() {
+        return fileTotal;
     }
 
-    public int getWrongMd5() {
-        return wrongMd5;
+    public int getWrongMd5Total() {
+        return wrongMd5Total;
     }
 
-    public int getConflict() {
-        return conflict;
+    public int getConflictTotal() {
+        return conflictTotal;
     }
 
-    public int getErrors() {
-        return errors;
+    public int getErrorTotal() {
+        return errorTotal;
     }
 
 }
