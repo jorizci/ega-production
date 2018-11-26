@@ -21,10 +21,11 @@ import org.bouncycastle.openpgp.PGPException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import uk.ac.ebi.ega.encryption.core.exception.OutputFileAlreadyExists;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -46,12 +47,12 @@ public class ReEncryptionTest {
 
     @Test
     public void testCipEncryption() throws URISyntaxException, IOException, PGPException, NoSuchAlgorithmException,
-            OutputFileAlreadyExists, InvalidAlgorithmParameterException, InvalidKeySpecException, InvalidKeyException {
+            InvalidAlgorithmParameterException, InvalidKeySpecException, InvalidKeyException {
         File file = new File(this.getClass().getClassLoader().getResource("test.txt.gpg").toURI());
         File outputFile = temporaryFolder.newFile();
 
-        final ReEncryptionReport report = ReEncryption.reEncrypt(file, "test".toCharArray(), outputFile,
-                "test2".toCharArray(), true);
+        final ReEncryptionReport report = ReEncryption.reEncrypt(new FileInputStream(file), "test".toCharArray(),
+                new FileOutputStream(outputFile), "test2".toCharArray());
 
         MessageDigest md = MessageDigest.getInstance("MD5");
         try (InputStream is = Files.newInputStream(outputFile.toPath());
@@ -60,6 +61,7 @@ public class ReEncryptionTest {
             while (dis.read(buffer) != -1) {
             }
         }
+        assertEquals(20, report.getUnencryptedSize());
         assertEquals("4221d002ceb5d3c9e9137e495ceaa647", report.getUnencryptedMd5());
         assertEquals(report.getReEncryptedMd5(), DatatypeConverter.printHexBinary(md.digest()).toLowerCase());
     }

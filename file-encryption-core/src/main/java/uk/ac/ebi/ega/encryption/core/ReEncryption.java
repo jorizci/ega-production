@@ -22,12 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ega.encryption.core.encryption.AesAlexander;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
-import uk.ac.ebi.ega.encryption.core.exception.OutputFileAlreadyExists;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,23 +43,10 @@ public class ReEncryption {
     //Delta size for report status, 1G
     private static final long DELTA_SIZE = GBYTE;
 
-    public static ReEncryptionReport reEncrypt(File inputFile, char[] passwordInput, File outputFile,
-                                               char[] passwordOutput, boolean overwrite) throws IOException,
-            OutputFileAlreadyExists, PGPException, InvalidAlgorithmParameterException, InvalidKeySpecException,
-            InvalidKeyException {
-        try (InputStream inputStream = new FileInputStream(inputFile);) {
-            return reEncrypt(inputStream, passwordInput, outputFile, passwordOutput, overwrite);
-        }
-    }
-
-    public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, File outputFile,
-                                               char[] passwordOutput, boolean overwrite)
-            throws IOException, PGPException, OutputFileAlreadyExists, InvalidAlgorithmParameterException,
+    public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, OutputStream outputFile,
+                                               char[] passwordOutput)
+            throws IOException, PGPException, InvalidAlgorithmParameterException,
             InvalidKeySpecException, InvalidKeyException {
-
-        if (!overwrite && outputFile.exists()) {
-            throw new OutputFileAlreadyExists(outputFile);
-        }
 
         MessageDigest messageDigestEncrypted = null;
         MessageDigest messageDigest = null;
@@ -80,34 +63,35 @@ public class ReEncryption {
                 InputStream digestedInputStream = new DigestInputStream(inputFile, messageDigestEncrypted);
                 InputStream decryptedStream = PgpSymmetric.decrypt(digestedInputStream, passwordInput);
                 InputStream digestedDecryptedStream = new DigestInputStream(decryptedStream, messageDigest);
-                OutputStream outputStream = new FileOutputStream(outputFile);
-                OutputStream digestedOutputStream = new DigestOutputStream(outputStream, messageDigestReEncrypted);
+                OutputStream digestedOutputStream = new DigestOutputStream(outputFile, messageDigestReEncrypted);
                 OutputStream cypherOutputStream = AesAlexander.encrypt(passwordOutput, digestedOutputStream);
         ) {
-            doReEncryption(digestedDecryptedStream, cypherOutputStream);
+            final long unencryptedSize = doReEncryption(digestedDecryptedStream, cypherOutputStream);
             String encryptedMd5 = getNormalizedMd5(messageDigestEncrypted);
             String unencryptedMd5 = getNormalizedMd5(messageDigest);
             String reEncryptedMd5 = getNormalizedMd5(messageDigestReEncrypted);
-            logger.info("EncryptedMd5 {}, Unencrypted Md5 {}, Re encrypted Md5 {}", encryptedMd5, unencryptedMd5,
-                    reEncryptedMd5);
-            return new ReEncryptionReport(encryptedMd5, unencryptedMd5, reEncryptedMd5);
+            logger.info("EncryptedMd5 {}, Unencrypted Md5 {}, Re encrypted Md5 {}, unencrypted file size {} bytes",
+                    encryptedMd5, unencryptedMd5, reEncryptedMd5, unencryptedSize);
+            return new ReEncryptionReport(encryptedMd5, unencryptedMd5, reEncryptedMd5, unencryptedSize);
         }
     }
 
-    private static void doReEncryption(InputStream digestedDecryptedStream, OutputStream cypherOutputStream) throws IOException {
+    private static long doReEncryption(InputStream digestedDecryptedStream, OutputStream cypherOutputStream)
+            throws IOException {
         byte[] buffer = new byte[BUFFER_SIZE];
         int bytesRead = digestedDecryptedStream.read(buffer);
-        long totalBytes = bytesRead;
+        long totalBytes = 0;
         long lastReported = 0;
         while (bytesRead != -1) {
+            totalBytes += bytesRead;
             cypherOutputStream.write(buffer, 0, bytesRead);
             if (totalBytes >= lastReported + DELTA_SIZE) {
                 lastReported = totalBytes;
                 logger.info("Total size re-encrypted {} Gbytes", toGbytes(lastReported));
             }
             bytesRead = digestedDecryptedStream.read(buffer);
-            totalBytes += bytesRead;
         }
+        return totalBytes;
     }
 
     private static long toGbytes(long lastReported) {
