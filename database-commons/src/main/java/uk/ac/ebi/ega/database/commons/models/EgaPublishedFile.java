@@ -57,4 +57,14 @@ public class EgaPublishedFile {
         return unencryptedMd5;
     }
 
+    public String getEncryptionExtension() {
+        if (fileName.endsWith("cip")) {
+            return "cip";
+        }
+        if (fileName.endsWith("gpg")) {
+            return "gpg";
+        }
+        throw null;
+    }
+
 }

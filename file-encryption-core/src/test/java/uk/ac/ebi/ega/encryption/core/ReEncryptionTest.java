@@ -52,7 +52,7 @@ public class ReEncryptionTest {
         File outputFile = temporaryFolder.newFile();
 
         final ReEncryptionReport report = ReEncryption.reEncrypt(new FileInputStream(file), "test".toCharArray(),
-                new FileOutputStream(outputFile), "test2".toCharArray());
+                new FileOutputStream(outputFile), "test2".toCharArray(), Algorithms.PGP);
 
         MessageDigest md = MessageDigest.getInstance("MD5");
         try (InputStream is = Files.newInputStream(outputFile.toPath());

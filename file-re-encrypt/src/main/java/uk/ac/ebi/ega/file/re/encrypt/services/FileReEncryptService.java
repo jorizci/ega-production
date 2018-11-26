@@ -27,6 +27,7 @@ import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.database.commons.services.ProFilerService;
 import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
 import uk.ac.ebi.ega.database.commons.utils.FileUtils;
+import uk.ac.ebi.ega.encryption.core.Algorithms;
 import uk.ac.ebi.ega.encryption.core.ReEncryption;
 import uk.ac.ebi.ega.encryption.core.ReEncryptionReport;
 import uk.ac.ebi.ega.file.re.encrypt.exceptions.OriginalEncryptedMd5Mismatch;
@@ -37,7 +38,6 @@ import uk.ac.ebi.ega.file.re.encrypt.services.fire.FireService;
 import uk.ac.ebi.ega.file.re.encrypt.services.fire.IFireFile;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -186,6 +186,7 @@ public class FileReEncryptService {
     private ReEncryptionFile doReEncryptFile(EgaPublishedFile file) throws InvalidAlgorithmParameterException,
             InvalidKeyException, IOException, PGPException, OutputFileAlreadyExists, InvalidKeySpecException,
             OriginalEncryptedMd5Mismatch {
+        Algorithms decryptionAlgorithm = Algorithms.valueOf(file.getEncryptionExtension());
         final IFireFile fileInFire = fireService.getFile(file);
         File fileOut = generateFileOut(file);
         char[] originalPassword = getOriginalGpgPassword();
@@ -194,12 +195,13 @@ public class FileReEncryptService {
         try (InputStream input = fileInFire.getStream();
              OutputStream output = new FileOutputStream(fileOut)
         ) {
-            final ReEncryptionReport report = ReEncryption.reEncrypt(input, originalPassword, output, newPassword);
+            final ReEncryptionReport report = ReEncryption.reEncrypt(input, originalPassword, output, newPassword,
+                    decryptionAlgorithm);
             ReEncryptionFile.ReEncryptionStatus status = calculateProcessStatus(file, fileInFire, report);
             Long proFilerId = insertIntoProFiler(file.getEgaId(), fileOut, status, report.getReEncryptedMd5());
             return insertInReEncryption(file, fileOut, newPassword, proFilerId, status, report);
         } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException | InvalidKeySpecException |
-                OriginalEncryptedMd5Mismatch |  RuntimeException e) {
+                OriginalEncryptedMd5Mismatch | RuntimeException e) {
             // We delete the temporal file
             fileOut.delete();
             throw e;

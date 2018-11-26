@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
@@ -29,6 +30,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -39,9 +41,9 @@ import java.security.spec.InvalidKeySpecException;
 /**
  * Provides functionality to encrypt files using Alexander's AES flavour.
  */
-public class AesAlexander {
+public class AesCtr {
 
-    private static Logger logger = LoggerFactory.getLogger(AesAlexander.class);
+    private static Logger logger = LoggerFactory.getLogger(AesCtr.class);
     private static byte[] DEFAULT_SALT = new byte[]{-12, 34, 1, 0, -98, -33, 78, 21};
     private static int DEFAULT_ITERATION = 256;
 
@@ -64,7 +66,7 @@ public class AesAlexander {
         secureRandom.nextBytes(randomBytes);
         IvParameterSpec ivParameterSpec = new IvParameterSpec(randomBytes);
         outputStream.write(randomBytes);
-        cipher.init(1, secretKey, ivParameterSpec);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec);
         return new CipherOutputStream(outputStream, cipher);
     }
 
@@ -78,6 +80,33 @@ public class AesAlexander {
         PBEKeySpec pBEKeySpec = new PBEKeySpec(password, salt, 1024, iterationCount);
         SecretKey secretKey = secretKeyFactory.generateSecret(pBEKeySpec);
         return new SecretKeySpec(secretKey.getEncoded(), "AES");
+    }
+
+    public static InputStream decrypt(InputStream inputStream, char[] password)
+            throws InvalidAlgorithmParameterException, InvalidKeyException, IOException, InvalidKeySpecException {
+        return decrypt(inputStream, getKey(password, DEFAULT_SALT, DEFAULT_ITERATION));
+    }
+
+    public static InputStream decrypt(InputStream input, SecretKey secretKey) throws IOException,
+            InvalidAlgorithmParameterException, InvalidKeyException {
+        byte[] randomBytes = new byte[16];
+        for (int i = 0; i < 16; i++) {
+            int readValue = input.read();
+            if (readValue == -1) {
+                throw new IOException("AES CBC stream ended unexpectedly before reading the header");
+            }
+            randomBytes[i] = (byte) readValue;
+        }
+
+        Cipher cipher = null;
+        try {
+            cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            logger.error("Unexpected error", e);
+        }
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(randomBytes);
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec);
+        return new CipherInputStream(input, cipher);
     }
 
 }

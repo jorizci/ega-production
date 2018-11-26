@@ -20,7 +20,7 @@ package uk.ac.ebi.ega.encryption.core;
 import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ega.encryption.core.encryption.AesAlexander;
+import uk.ac.ebi.ega.encryption.core.encryption.AesCtr;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
 
 import javax.xml.bind.DatatypeConverter;
@@ -44,7 +44,7 @@ public class ReEncryption {
     private static final long DELTA_SIZE = GBYTE;
 
     public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, OutputStream outputFile,
-                                               char[] passwordOutput)
+                                               char[] passwordOutput, Algorithms decryptAlgorithm)
             throws IOException, PGPException, InvalidAlgorithmParameterException,
             InvalidKeySpecException, InvalidKeyException {
 
@@ -61,10 +61,10 @@ public class ReEncryption {
 
         try (
                 InputStream digestedInputStream = new DigestInputStream(inputFile, messageDigestEncrypted);
-                InputStream decryptedStream = PgpSymmetric.decrypt(digestedInputStream, passwordInput);
+                InputStream decryptedStream = getDecryptAlgorithm(passwordInput, digestedInputStream, decryptAlgorithm);
                 InputStream digestedDecryptedStream = new DigestInputStream(decryptedStream, messageDigest);
                 OutputStream digestedOutputStream = new DigestOutputStream(outputFile, messageDigestReEncrypted);
-                OutputStream cypherOutputStream = AesAlexander.encrypt(passwordOutput, digestedOutputStream);
+                OutputStream cypherOutputStream = AesCtr.encrypt(passwordOutput, digestedOutputStream);
         ) {
             final long unencryptedSize = doReEncryption(digestedDecryptedStream, cypherOutputStream);
             String encryptedMd5 = getNormalizedMd5(messageDigestEncrypted);
@@ -73,6 +73,20 @@ public class ReEncryption {
             logger.info("EncryptedMd5 {}, Unencrypted Md5 {}, Re encrypted Md5 {}, unencrypted file size {} bytes",
                     encryptedMd5, unencryptedMd5, reEncryptedMd5, unencryptedSize);
             return new ReEncryptionReport(encryptedMd5, unencryptedMd5, reEncryptedMd5, unencryptedSize);
+        }
+    }
+
+    private static InputStream getDecryptAlgorithm(char[] password, InputStream inputStream,
+                                                   Algorithms decryptAlgorithm)
+            throws IOException, PGPException, InvalidAlgorithmParameterException, InvalidKeySpecException,
+            InvalidKeyException {
+        switch (decryptAlgorithm) {
+            case AES:
+                return AesCtr.decrypt(inputStream, password);
+            case PGP:
+                return PgpSymmetric.decrypt(inputStream, password);
+            default:
+                throw new RuntimeException("Missing decryption algorithm");
         }
     }
 
