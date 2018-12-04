@@ -17,6 +17,7 @@
  */
 package uk.ac.ebi.ega.database.commons.utils;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,7 +34,8 @@ public class FileUtils {
     ));
 
     public static String getType(String fileName) {
-        String components[] = fileName.split("\\.");
+
+        String components[] = new File(fileName).getName().split("\\.");
         if (components.length == 1) {
             return "";
         }

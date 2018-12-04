@@ -26,6 +26,7 @@ import uk.ac.ebi.ega.database.commons.utils.FileUtils;
 
 import java.io.File;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -148,5 +149,17 @@ public class ProFilerService {
             }
             return result;
         });
+    }
+
+    public Integer getFireIdExitCode(long fireArchiveId) {
+        return doGetFireIdsExitCodes(Arrays.asList(fireArchiveId)).get(fireArchiveId);
+    }
+
+    public void deleteArchiveAction(Long fireArchiveId) {
+        String query = "DELETE FROM ega_ARCHIVE.archive " +
+                "WHERE archive_id in (:archive_id)";
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue("archive_id", fireArchiveId);
+        proFilerTemplate.update(query, parameters);
     }
 }

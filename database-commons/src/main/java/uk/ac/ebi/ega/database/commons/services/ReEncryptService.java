@@ -196,4 +196,12 @@ public class ReEncryptService {
         parameters.addValue("pro_filer_id", proFilerId);
         reEncryptTemplate.update(query, parameters);
     }
+
+    public void deleteFile(ReEncryptionFile reEncryptedFile) {
+        String query = "DELETE FROM re_encryption.processed_files " +
+                "WHERE file_id=:file_id";
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue("file_id", reEncryptedFile.getEgaId());
+        reEncryptTemplate.update(query, parameters);
+    }
 }
