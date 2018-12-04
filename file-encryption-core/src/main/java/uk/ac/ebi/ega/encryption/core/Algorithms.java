@@ -17,10 +17,28 @@
  */
 package uk.ac.ebi.ega.encryption.core;
 
+import uk.ac.ebi.ega.encryption.core.exceptions.UnknownFileExtension;
+
 public enum Algorithms {
 
-    AES,
+    AES("cip"),
 
-    PGP
+    PGP("gpg");
+
+
+    private final String fileExtension;
+
+    Algorithms(String fileExtension) {
+        this.fileExtension = fileExtension;
+    }
+
+    public static Algorithms fromExtension(String fileExtension) throws UnknownFileExtension {
+        for(Algorithms algorithm: values()){
+            if(fileExtension!=null && algorithm.fileExtension.compareToIgnoreCase(fileExtension)==0){
+                return algorithm;
+            }
+        }
+        throw new UnknownFileExtension(fileExtension);
+    }
 
 }

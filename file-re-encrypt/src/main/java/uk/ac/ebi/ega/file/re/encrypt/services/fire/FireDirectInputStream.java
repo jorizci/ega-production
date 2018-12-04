@@ -62,6 +62,7 @@ public class FireDirectInputStream extends InputStream {
         this.url = url;
         this.totalRead = 0;
         this.totalFileSize = getTotalFileSize(headUrl);
+        logger.info("File found in file direct {} with size {}", url, totalFileSize);
     }
 
     private long getTotalFileSize(String headUrl) throws IOException {

@@ -30,6 +30,7 @@ import uk.ac.ebi.ega.database.commons.utils.FileUtils;
 import uk.ac.ebi.ega.encryption.core.Algorithms;
 import uk.ac.ebi.ega.encryption.core.ReEncryption;
 import uk.ac.ebi.ega.encryption.core.ReEncryptionReport;
+import uk.ac.ebi.ega.encryption.core.exceptions.UnknownFileExtension;
 import uk.ac.ebi.ega.file.re.encrypt.exceptions.OriginalEncryptedMd5Mismatch;
 import uk.ac.ebi.ega.file.re.encrypt.exceptions.OutputFileAlreadyExists;
 import uk.ac.ebi.ega.file.re.encrypt.model.ReEncryptionProcessReport;
@@ -130,7 +131,7 @@ public class FileReEncryptService {
                     md5++;
                 }
             } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException |
-                    InvalidKeySpecException | RuntimeException e) {
+                    InvalidKeySpecException | UnknownFileExtension | RuntimeException e) {
                 errors++;
                 logger.error(e.getMessage(), e);
                 logger.error("Skipping file {} - {}, due to major error.", file.getEgaId(), file.getFileName());
@@ -148,15 +149,24 @@ public class FileReEncryptService {
 
     private ReEncryptionFile doReEncryptOrArchive(EgaPublishedFile file) throws InvalidAlgorithmParameterException,
             InvalidKeyException, IOException, PGPException, OutputFileAlreadyExists, InvalidKeySpecException,
-            OriginalEncryptedMd5Mismatch {
+            OriginalEncryptedMd5Mismatch, UnknownFileExtension {
         ReEncryptionFile reEncryptedFile = reEncryptService.findReEncryptedFile(file.getEgaId());
-        if (reEncryptedFile != null) {
+        if (reEncryptedFile != null && isInProgressOrArchived(reEncryptedFile)) {
             logger.info("Skipping file {} re-encryption. It has been processed already.", file.getEgaId());
             doArchiveOfExistingReEncryptedFile(file, reEncryptedFile);
             return reEncryptedFile;
-        } else {
-            return doReEncryptFile(file);
+        } else if (reEncryptedFile != null) {
+            logger.info("File {} was not archived correctly. Proceed to clean and re-encrypt again.", file.getEgaId());
+            new File(reEncryptedFile.getNewPath()).delete();
+            reEncryptService.deleteFile(reEncryptedFile);
+            proFilerService.deleteArchiveAction(reEncryptedFile.getFireArchiveId());
         }
+        return doReEncryptFile(file);
+    }
+
+    private boolean isInProgressOrArchived(ReEncryptionFile reEncryptedFile) {
+        final Integer fireIdExitCode = proFilerService.getFireIdExitCode(reEncryptedFile.getFireArchiveId());
+        return fireIdExitCode == null || fireIdExitCode == 0;
     }
 
     private void doArchiveOfExistingReEncryptedFile(EgaPublishedFile file, ReEncryptionFile reEncryptedFile) {
@@ -185,8 +195,8 @@ public class FileReEncryptService {
 
     private ReEncryptionFile doReEncryptFile(EgaPublishedFile file) throws InvalidAlgorithmParameterException,
             InvalidKeyException, IOException, PGPException, OutputFileAlreadyExists, InvalidKeySpecException,
-            OriginalEncryptedMd5Mismatch {
-        Algorithms decryptionAlgorithm = Algorithms.valueOf(file.getEncryptionExtension());
+            OriginalEncryptedMd5Mismatch, UnknownFileExtension {
+        Algorithms decryptionAlgorithm = Algorithms.fromExtension(file.getEncryptionExtension());
         final IFireFile fileInFire = fireService.getFile(file);
         File fileOut = generateFileOut(file);
         char[] originalPassword = getOriginalGpgPassword();
@@ -200,8 +210,8 @@ public class FileReEncryptService {
             ReEncryptionFile.ReEncryptionStatus status = calculateProcessStatus(file, fileInFire, report);
             Long proFilerId = insertIntoProFiler(file.getEgaId(), fileOut, status, report.getReEncryptedMd5());
             return insertInReEncryption(file, fileOut, newPassword, proFilerId, status, report);
-        } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException | InvalidKeySpecException |
-                OriginalEncryptedMd5Mismatch | RuntimeException e) {
+        } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException |
+                InvalidKeySpecException | OriginalEncryptedMd5Mismatch | RuntimeException e) {
             // We delete the temporal file
             fileOut.delete();
             throw e;
