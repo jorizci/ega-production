@@ -18,19 +18,11 @@
 package uk.ac.ebi.ega.file.re.encrypt.services.fire.exceptions;
 
 import java.io.IOException;
-import java.util.List;
 
 public class MaxRetryOnConnectionReached extends IOException {
 
-    private final List<Exception> errors;
-
-    public MaxRetryOnConnectionReached(List<Exception> errors) {
-        super(errors.get(errors.size() - 1));
-        this.errors = errors;
-    }
-
-    public List<Exception> getErrors() {
-        return errors;
+    public MaxRetryOnConnectionReached() {
+        super("Max retries to connect has been reached");
     }
 
 }

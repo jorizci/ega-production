@@ -103,13 +103,17 @@ public class FireDirectInputStream extends InputStream {
                     return;
                 }
             } catch (IOException e) {
+                logger.info(e.getMessage());
                 exceptions.add(e);
-                logger.error(e.getMessage(), e);
             }
             // input stream was closed before receiving all the data
             closeConnection();
         }
-        throw new MaxRetryOnConnectionReached(exceptions);
+
+        for (Exception exception : exceptions) {
+            logger.error(exception.getMessage(),exception);
+        }
+        throw new MaxRetryOnConnectionReached();
     }
 
     private void connect(String contentUrl, long start) throws IOException {
