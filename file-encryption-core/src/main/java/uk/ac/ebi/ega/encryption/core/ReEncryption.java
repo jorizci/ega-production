@@ -20,7 +20,7 @@ package uk.ac.ebi.ega.encryption.core;
 import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ega.encryption.core.encryption.AesCtr;
+import uk.ac.ebi.ega.encryption.core.encryption.AesCtrEga;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
 import uk.ac.ebi.ega.encryption.core.utils.Hash;
 import uk.ac.ebi.ega.encryption.core.utils.io.IOUtils;
@@ -56,7 +56,7 @@ public class ReEncryption {
                 InputStream decryptedStream = getDecryptAlgorithm(passwordInput, digestedInputStream, decryptAlgorithm);
                 InputStream digestedDecryptedStream = new DigestInputStream(decryptedStream, messageDigest);
                 OutputStream digestedOutputStream = new DigestOutputStream(outputFile, messageDigestReEncrypted);
-                OutputStream cypherOutputStream = AesCtr.encrypt(passwordOutput, digestedOutputStream);
+                OutputStream cypherOutputStream = AesCtrEga.encrypt(passwordOutput, digestedOutputStream);
         ) {
             unencryptedSize = IOUtils.bufferedPipe(digestedDecryptedStream, cypherOutputStream, BUFFER_SIZE);
         }
@@ -74,7 +74,7 @@ public class ReEncryption {
             InvalidKeyException {
         switch (decryptAlgorithm) {
             case AES:
-                return AesCtr.decrypt(inputStream, password);
+                return AesCtrEga.decrypt(inputStream, password);
             case PGP:
                 return PgpSymmetric.decrypt(inputStream, password);
             default:

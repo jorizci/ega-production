@@ -18,7 +18,7 @@
 package uk.ac.ebi.ega.encryption.core;
 
 import org.junit.Test;
-import uk.ac.ebi.ega.encryption.core.encryption.AesCtr;
+import uk.ac.ebi.ega.encryption.core.encryption.AesCtrEga;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,7 +31,7 @@ import java.security.spec.InvalidKeySpecException;
 
 import static org.junit.Assert.assertEquals;
 
-public class AesCtrTest {
+public class AesCtrEgaTest {
 
     @Test
     public void testCipEncryption() throws IOException, InvalidAlgorithmParameterException, InvalidKeySpecException,
@@ -44,7 +44,7 @@ public class AesCtrTest {
 
     private byte[] doEncrypt(byte[] data, char[] password) throws InvalidAlgorithmParameterException, InvalidKeyException, IOException, InvalidKeySpecException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        OutputStream stream = AesCtr.encrypt(password, baos);
+        OutputStream stream = AesCtrEga.encrypt(password, baos);
         stream.write(data);
         byte[] encryptedData = baos.toByteArray();
         assertEquals(data.length + 16, encryptedData.length);
@@ -59,7 +59,7 @@ public class AesCtrTest {
         final char[] password = "test".toCharArray();
         final byte[] encryptedMessage = doEncrypt(data, password);
         ByteArrayInputStream inputStream = new ByteArrayInputStream(encryptedMessage);
-        final InputStream decrypt = AesCtr.decrypt(inputStream, password);
+        final InputStream decrypt = AesCtrEga.decrypt(inputStream, password);
         byte[] buffer = new byte[16];
         int totalRead = 0;
         int read;

@@ -41,9 +41,9 @@ import java.security.spec.InvalidKeySpecException;
 /**
  * Provides functionality to encrypt files using Alexander's AES flavour.
  */
-public class AesCtr {
+public class AesCtrEga {
 
-    private static Logger logger = LoggerFactory.getLogger(AesCtr.class);
+    private static Logger logger = LoggerFactory.getLogger(AesCtrEga.class);
     private static byte[] DEFAULT_SALT = new byte[]{-12, 34, 1, 0, -98, -33, 78, 21};
     private static int DEFAULT_ITERATION = 256;
 
