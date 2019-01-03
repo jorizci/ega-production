@@ -18,33 +18,29 @@
 package uk.ac.ebi.ega.encryption.core;
 
 import org.junit.Test;
-import uk.ac.ebi.ega.encryption.core.encryption.AesCtrEga;
+import uk.ac.ebi.ega.encryption.core.encryption.AesCtr256Ega;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.spec.InvalidKeySpecException;
 
 import static org.junit.Assert.assertEquals;
 
 public class AesCtrEgaTest {
 
     @Test
-    public void testCipEncryption() throws IOException, InvalidAlgorithmParameterException, InvalidKeySpecException,
-            InvalidKeyException {
+    public void testCipEncryption() throws IOException {
         final byte[] data = "test file.".getBytes();
         final char[] password = "test".toCharArray();
         doEncrypt(data, password);
 
     }
 
-    private byte[] doEncrypt(byte[] data, char[] password) throws InvalidAlgorithmParameterException, InvalidKeyException, IOException, InvalidKeySpecException {
+    private byte[] doEncrypt(byte[] data, char[] password) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        OutputStream stream = AesCtrEga.encrypt(password, baos);
+        OutputStream stream = new AesCtr256Ega().encrypt(password, baos);
         stream.write(data);
         byte[] encryptedData = baos.toByteArray();
         assertEquals(data.length + 16, encryptedData.length);
@@ -52,14 +48,13 @@ public class AesCtrEgaTest {
     }
 
     @Test
-    public void testCipDecryption() throws InvalidKeySpecException, InvalidAlgorithmParameterException,
-            InvalidKeyException, IOException {
+    public void testCipDecryption() throws IOException {
         final String message = "test file.";
         final byte[] data = message.getBytes();
         final char[] password = "test".toCharArray();
         final byte[] encryptedMessage = doEncrypt(data, password);
         ByteArrayInputStream inputStream = new ByteArrayInputStream(encryptedMessage);
-        final InputStream decrypt = AesCtrEga.decrypt(inputStream, password);
+        final InputStream decrypt = new AesCtr256Ega().decrypt(inputStream, password);
         byte[] buffer = new byte[16];
         int totalRead = 0;
         int read;

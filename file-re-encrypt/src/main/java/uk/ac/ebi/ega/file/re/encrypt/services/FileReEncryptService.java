@@ -210,8 +210,7 @@ public class FileReEncryptService {
             ReEncryptionFile.ReEncryptionStatus status = calculateProcessStatus(file, fileInFire, report);
             Long proFilerId = insertIntoProFiler(file.getEgaId(), fileOut, status, report.getReEncryptedMd5());
             return insertInReEncryption(file, fileOut, newPassword, proFilerId, status, report);
-        } catch (InvalidAlgorithmParameterException | InvalidKeyException | IOException | PGPException |
-                InvalidKeySpecException | OriginalEncryptedMd5Mismatch | RuntimeException e) {
+        } catch (IOException | PGPException | OriginalEncryptedMd5Mismatch | RuntimeException e) {
             // We delete the temporal file
             fileOut.delete();
             throw e;

@@ -18,20 +18,18 @@
 package uk.ac.ebi.ega.encryption.core.encryption;
 
 import org.bouncycastle.util.io.Streams;
+import uk.ac.ebi.ega.encryption.core.utils.Encryption;
 import uk.ac.ebi.ega.encryption.core.utils.Hash;
+import uk.ac.ebi.ega.encryption.core.utils.Random;
+import uk.ac.ebi.ega.encryption.core.utils.io.IOUtils;
 
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -39,7 +37,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 /**
  * Implements encryption / decryption using AES 256 CBC no IV compatible with openssl
  */
-public class AesCbcOpenSSL extends AesGeneric {
+public class AesCbcOpenSSL extends AlgorithmGeneric {
 
     private static final byte[] SALTED_MAGIC = "Salted__".getBytes(US_ASCII);
 
@@ -50,9 +48,9 @@ public class AesCbcOpenSSL extends AesGeneric {
     private IvParameterSpec ivParameterSpec;
 
     @Override
-    protected void initializeRead(InputStream inputStream, byte[] password) throws IOException {
+    protected void initializeRead(InputStream inputStream, char[] password) throws IOException {
         assertHeader(inputStream);
-        initializePasswordAndIV(password, readSaltFromHeader(inputStream));
+        initializePasswordAndIV(IOUtils.convertToBytes(password), readSaltFromHeader(inputStream));
     }
 
     private void initializePasswordAndIV(byte[] password, byte[] salt) {
@@ -94,31 +92,28 @@ public class AesCbcOpenSSL extends AesGeneric {
     }
 
     @Override
-    protected void initializeWrite(byte[] password, OutputStream outputStream) throws IOException, NoSuchAlgorithmException {
+    protected void initializeWrite(char[] password, OutputStream outputStream) throws IOException {
         outputStream.write(SALTED_MAGIC);
         byte[] salt = generateSalt();
         outputStream.write(salt);
         outputStream.flush();
-        initializePasswordAndIV(password, salt);
+        initializePasswordAndIV(IOUtils.convertToBytes(password), salt);
     }
 
-    private byte[] generateSalt() throws NoSuchAlgorithmException {
+    private byte[] generateSalt() {
         if (fixedSalt != null) {
             return fixedSalt;
         }
 
         byte[] randomBytes = new byte[8];
-        SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
-        secureRandom.nextBytes(randomBytes);
+        Random.getSHA1PRNG().nextBytes(randomBytes);
         return randomBytes;
     }
 
 
     @Override
-    protected Cipher getCipher(int encryptMode) throws InvalidAlgorithmParameterException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(encryptMode, secretKeySpec, ivParameterSpec);
-        return cipher;
+    protected Cipher getCipher(int encryptMode) {
+        return Encryption.getCipher("AES/CBC/PKCS5Padding", encryptMode, secretKeySpec, ivParameterSpec);
     }
 
     public byte[] getFixedSalt() {

@@ -20,6 +20,11 @@ package uk.ac.ebi.ega.encryption.core.utils.io;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.util.Arrays;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class IOUtils {
 
@@ -34,6 +39,15 @@ public class IOUtils {
             bytesRead = inputStream.read(buffer);
         }
         return totalBytes;
+    }
+
+    public static byte[] convertToBytes(char[] password) {
+        CharBuffer charBuffer = CharBuffer.wrap(password);
+        ByteBuffer byteBuffer = UTF_8.encode(charBuffer);
+        byte[] bytes = Arrays.copyOfRange(byteBuffer.array(), 0, byteBuffer.limit());
+        // Clear sensitive data
+        Arrays.fill(byteBuffer.array(), (byte) 0);
+        return bytes;
     }
 
 }

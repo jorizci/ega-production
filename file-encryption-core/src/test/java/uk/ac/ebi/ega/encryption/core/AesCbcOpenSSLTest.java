@@ -20,8 +20,6 @@ package uk.ac.ebi.ega.encryption.core;
 import org.bouncycastle.util.io.Streams;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ega.encryption.core.encryption.AesCbcOpenSSL;
 
 import javax.crypto.NoSuchPaddingException;

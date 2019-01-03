@@ -33,9 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.spec.InvalidKeySpecException;
 
 public class FileReEncryptService {
 
@@ -65,8 +62,7 @@ public class FileReEncryptService {
                     OutputStream outputFile = new FileOutputStream(fileOutputPath)
             ) {
                 ReEncryption.reEncrypt(fireFile, password, outputFile, outputPassword, algorithm);
-            } catch (InvalidAlgorithmParameterException | PGPException | InvalidKeyException | InvalidKeySpecException |
-                    IOException e) {
+            } catch (PGPException | IOException e) {
                 logger.error(e.getMessage(), e);
             }
         }

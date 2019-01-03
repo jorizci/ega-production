@@ -20,7 +20,7 @@ package uk.ac.ebi.ega.encryption.core;
 import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ega.encryption.core.encryption.AesCtrEga;
+import uk.ac.ebi.ega.encryption.core.encryption.AesCtr256Ega;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
 import uk.ac.ebi.ega.encryption.core.utils.Hash;
 import uk.ac.ebi.ega.encryption.core.utils.io.IOUtils;
@@ -30,10 +30,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.DigestInputStream;
 import java.security.DigestOutputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.MessageDigest;
-import java.security.spec.InvalidKeySpecException;
 
 public class ReEncryption {
 
@@ -43,8 +40,7 @@ public class ReEncryption {
 
     public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, OutputStream outputFile,
                                                char[] passwordOutput, Algorithms decryptAlgorithm)
-            throws IOException, PGPException, InvalidAlgorithmParameterException,
-            InvalidKeySpecException, InvalidKeyException {
+            throws IOException, PGPException {
 
         MessageDigest messageDigestEncrypted = Hash.getMd5();
         MessageDigest messageDigest = Hash.getMd5();
@@ -56,7 +52,7 @@ public class ReEncryption {
                 InputStream decryptedStream = getDecryptAlgorithm(passwordInput, digestedInputStream, decryptAlgorithm);
                 InputStream digestedDecryptedStream = new DigestInputStream(decryptedStream, messageDigest);
                 OutputStream digestedOutputStream = new DigestOutputStream(outputFile, messageDigestReEncrypted);
-                OutputStream cypherOutputStream = AesCtrEga.encrypt(passwordOutput, digestedOutputStream);
+                OutputStream cypherOutputStream = new AesCtr256Ega().encrypt(passwordOutput, digestedOutputStream);
         ) {
             unencryptedSize = IOUtils.bufferedPipe(digestedDecryptedStream, cypherOutputStream, BUFFER_SIZE);
         }
@@ -70,11 +66,10 @@ public class ReEncryption {
 
     private static InputStream getDecryptAlgorithm(char[] password, InputStream inputStream,
                                                    Algorithms decryptAlgorithm)
-            throws IOException, PGPException, InvalidAlgorithmParameterException, InvalidKeySpecException,
-            InvalidKeyException {
+            throws IOException, PGPException {
         switch (decryptAlgorithm) {
             case AES:
-                return AesCtrEga.decrypt(inputStream, password);
+                return new AesCtr256Ega().decrypt(inputStream, password);
             case PGP:
                 return PgpSymmetric.decrypt(inputStream, password);
             default:
