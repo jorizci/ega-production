@@ -93,7 +93,7 @@ public class AesCtr {
         for (int i = 0; i < 16; i++) {
             int readValue = input.read();
             if (readValue == -1) {
-                throw new IOException("AES CBC stream ended unexpectedly before reading the header");
+                throw new IOException("AES CTR stream ended unexpectedly before reading the header");
             }
             randomBytes[i] = (byte) readValue;
         }
@@ -105,7 +105,7 @@ public class AesCtr {
             logger.error("Unexpected error", e);
         }
         IvParameterSpec ivParameterSpec = new IvParameterSpec(randomBytes);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivParameterSpec);
         return new CipherInputStream(input, cipher);
     }
 

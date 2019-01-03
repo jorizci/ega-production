@@ -27,6 +27,7 @@
     <modules>
         <module>database-commons</module>
         <module>file-encryption-core</module>
+        <module>cmd-encryption</module>
         <module>file-re-encrypt</module>
         <module>file-re-encrypt-publisher</module>
     </modules>

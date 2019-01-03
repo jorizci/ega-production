@@ -61,9 +61,9 @@ public class FileReEncryptConfiguration {
     @Bean
     public CommandLineRunner clr() {
         return args -> {
-            Optional<FileImporterOptions> var = FileImporterOptions.parse(args);
+            Optional<FileReEncryptOptions> var = FileReEncryptOptions.parse(args);
             if (var.isPresent()) {
-                FileImporterOptions options = var.get();
+                FileReEncryptOptions options = var.get();
                 if (options.isDataset()) {
                     fileReEncryptService().reEncryptDataset(options.getEgaId());
                 } else {
