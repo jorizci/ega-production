@@ -17,29 +17,23 @@
  */
 package uk.ac.ebi.ega.encryption.core.encryption;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.bouncycastle.util.io.Streams;
 import uk.ac.ebi.ega.encryption.core.utils.Encryption;
 import uk.ac.ebi.ega.encryption.core.utils.Random;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
 /**
  * Provides functionality to encrypt files using Alexander's AES flavour.
  */
 public class AesCtr256Ega extends AlgorithmGeneric {
-
-    private static final Logger logger = LoggerFactory.getLogger(AesCtr256Ega.class);
 
     private static final int ITERATION_COUNT = 1024;
 
@@ -53,15 +47,9 @@ public class AesCtr256Ega extends AlgorithmGeneric {
 
     @Override
     protected void initializeRead(InputStream inputStream, char[] password) throws IOException {
-        byte[] randomBytes = new byte[16];
-        for (int i = 0; i < 16; i++) {
-            int readValue = inputStream.read();
-            if (readValue == -1) {
-                throw new IOException("AES CTR stream ended unexpectedly before reading the header");
-            }
-            randomBytes[i] = (byte) readValue;
-        }
-        ivParameterSpec = new IvParameterSpec(randomBytes);
+        byte[] IV = new byte[16];
+        Streams.readFully(inputStream, IV);
+        ivParameterSpec = new IvParameterSpec(IV);
         secretKey = getKey(password, DEFAULT_SALT);
     }
 
@@ -79,20 +67,9 @@ public class AesCtr256Ega extends AlgorithmGeneric {
         return Encryption.getCipher("AES/CTR/NoPadding", encryptMode, secretKey, ivParameterSpec);
     }
 
-    public static SecretKey getKey(char[] password, byte[] salt) {
-        SecretKeyFactory secretKeyFactory = null;
-        try {
-            secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-        } catch (NoSuchAlgorithmException e) {
-            logger.error("Unexpected error", e);
-        }
+    public static SecretKeySpec getKey(char[] password, byte[] salt) {
         PBEKeySpec pBEKeySpec = new PBEKeySpec(password, salt, ITERATION_COUNT, KEY_SIZE);
-        try {
-            return new SecretKeySpec(secretKeyFactory.generateSecret(pBEKeySpec).getEncoded(), "AES");
-        } catch (InvalidKeySpecException e) {
-            logger.error(e.getMessage(), e);
-            throw new AssertionError(e);
-        }
+        return new SecretKeySpec(Encryption.getSecretKey("PBKDF2WithHmacSHA1", pBEKeySpec).getEncoded(), "AES");
     }
 
 }

@@ -23,16 +23,17 @@ import org.slf4j.LoggerFactory;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
 
 public class Encryption {
 
     private final static Logger logger = LoggerFactory.getLogger(Encryption.class);
-
-
 
     /**
      * Returns configured cipher following the specification provided. This method is only recommended for known
@@ -58,5 +59,20 @@ public class Encryption {
         }
     }
 
-
+    /**
+     * Returns a secret key according algorithm and key specifications. This method is only recommended for known
+     * working algorithm/specification pairs
+     * @param algorithm
+     * @param keySpec
+     * @return
+     * @throws AssertionError if algorithm could not be instanced or specification is not valid.
+     */
+    public static SecretKey getSecretKey(String algorithm, KeySpec keySpec) {
+        try {
+            return SecretKeyFactory.getInstance(algorithm).generateSecret(keySpec);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            logger.error(e.getMessage(), e);
+            throw new AssertionError(e);
+        }
+    }
 }

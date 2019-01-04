@@ -25,6 +25,8 @@ import org.bouncycastle.openpgp.PGPLiteralData;
 import org.bouncycastle.openpgp.PGPPBEEncryptedData;
 import org.bouncycastle.openpgp.PGPUtil;
 import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
+import org.bouncycastle.openpgp.operator.PBEDataDecryptorFactory;
+import org.bouncycastle.openpgp.operator.PGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBEDataDecryptorFactoryBuilder;
 
@@ -54,7 +56,13 @@ public class PgpSymmetric {
 
         PGPPBEEncryptedData pbe = (PGPPBEEncryptedData) enc.get(0);
 
-        InputStream clear = pbe.getDataStream(new JcePBEDataDecryptorFactoryBuilder(new JcaPGPDigestCalculatorProviderBuilder().setProvider("BC").build()).setProvider("BC").build(passPhrase));
+        PGPDigestCalculatorProvider digestCalculatorProvider = new JcaPGPDigestCalculatorProviderBuilder()
+                .setProvider("BC").build();
+
+        PBEDataDecryptorFactory dataDecryptorFactory = new JcePBEDataDecryptorFactoryBuilder(digestCalculatorProvider)
+                .setProvider("BC").build(passPhrase);
+
+        InputStream clear = pbe.getDataStream(dataDecryptorFactory);
 
         JcaPGPObjectFactory pgpFact = new JcaPGPObjectFactory(clear);
 
