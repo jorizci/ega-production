@@ -87,11 +87,13 @@ public class ReportingOutputStream extends OutputStream {
     @Override
     public void write(byte[] bytes) throws IOException {
         outputStream.write(bytes);
+        doReport(bytes.length);
     }
 
     @Override
-    public void write(byte[] bytes, int i, int i1) throws IOException {
-        outputStream.write(bytes, i, i1);
+    public void write(byte[] bytes, int offset, int length) throws IOException {
+        outputStream.write(bytes, offset, length);
+        doReport(length);
     }
 
     @Override
