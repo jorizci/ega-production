@@ -22,10 +22,13 @@ import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Random {
 
     private final static Logger logger = LoggerFactory.getLogger(Random.class);
+
+    private final static String dictionary = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789";
 
     public static SecureRandom getSHA1PRNG() {
         return getSecureRandom("SHA1PRNG");
@@ -38,6 +41,15 @@ public class Random {
             logger.error(e.getMessage(), e);
             throw new AssertionError(e);
         }
+    }
+
+    public static char[] getRandomString(int size) {
+        char[] randomString = new char[size];
+        for (int i = 0; i < size; i++) {
+            int randomNum = ThreadLocalRandom.current().nextInt(0, dictionary.length());
+            randomString[i] = dictionary.charAt(randomNum);
+        }
+        return randomString;
     }
 
 }

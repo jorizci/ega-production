@@ -17,8 +17,8 @@
  */
 package uk.ac.ebi.ega.file.re.encrypt.services.key;
 
+import uk.ac.ebi.ega.encryption.core.utils.Random;
 import uk.ac.ebi.ega.file.re.encrypt.services.IKeyGenerator;
-import uk.ac.ebi.ega.file.re.encrypt.utils.RandomStringGenerator;
 
 public class RandomKeyGenerator implements IKeyGenerator {
 
@@ -30,7 +30,7 @@ public class RandomKeyGenerator implements IKeyGenerator {
 
     @Override
     public char[] generateKey() {
-        return RandomStringGenerator.generateRandomString(randomSize);
+        return Random.getRandomString(randomSize);
     }
 
 }
