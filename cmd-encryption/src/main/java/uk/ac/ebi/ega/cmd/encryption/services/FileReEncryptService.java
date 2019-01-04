@@ -17,7 +17,6 @@
  */
 package uk.ac.ebi.ega.cmd.encryption.services;
 
-import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ega.cmd.encryption.options.OutputFormat;
@@ -62,7 +61,7 @@ public class FileReEncryptService {
                     OutputStream outputFile = new FileOutputStream(fileOutputPath)
             ) {
                 ReEncryption.reEncrypt(fireFile, password, outputFile, outputPassword, algorithm);
-            } catch (PGPException | IOException e) {
+            } catch (IOException | RuntimeException e) {
                 logger.error(e.getMessage(), e);
             }
         }

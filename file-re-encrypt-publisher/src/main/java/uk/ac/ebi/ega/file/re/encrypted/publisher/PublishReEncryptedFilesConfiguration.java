@@ -26,9 +26,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import uk.ac.ebi.ega.database.commons.services.AuditService;
+import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.database.commons.services.ProFilerService;
 import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
-import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.file.re.encrypted.publisher.services.PublishReEncryptedFilesService;
 
 import java.util.Optional;

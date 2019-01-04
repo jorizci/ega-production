@@ -17,8 +17,6 @@
  */
 package uk.ac.ebi.ega.cmd.encryption.services.fire;
 
-import uk.ac.ebi.ega.cmd.encryption.services.fire.IFireFile;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

@@ -22,6 +22,7 @@ import org.bouncycastle.util.io.Streams;
 import org.junit.Test;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -35,5 +36,19 @@ public class PgpSymmetricTest {
         PgpSymmetric pgpSymmetric = new PgpSymmetric();
         byte[] test = Streams.readAll(pgpSymmetric.decrypt(input, "test".toCharArray()));
         assertEquals("this is a test file\n", new String(test));
+    }
+
+    @Test(expected = IOException.class)
+    public void testDecryptFileWrongPassword() throws IOException, PGPException {
+        InputStream input = this.getClass().getClassLoader().getResourceAsStream("test.txt.gpg");
+        PgpSymmetric pgpSymmetric = new PgpSymmetric();
+        byte[] test = Streams.readAll(pgpSymmetric.decrypt(input, "kiwi".toCharArray()));
+    }
+
+    @Test(expected = IOException.class)
+    public void testDecryptFileBadFile() throws IOException, PGPException {
+        InputStream input = new ByteArrayInputStream("This is not a pgp stream".getBytes());
+        PgpSymmetric pgpSymmetric = new PgpSymmetric();
+        byte[] test = Streams.readAll(pgpSymmetric.decrypt(input, "kiwi".toCharArray()));
     }
 }

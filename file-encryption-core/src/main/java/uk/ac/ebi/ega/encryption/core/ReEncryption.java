@@ -17,7 +17,6 @@
  */
 package uk.ac.ebi.ega.encryption.core;
 
-import org.bouncycastle.openpgp.PGPException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ega.encryption.core.encryption.AesCtr256Ega;
@@ -40,7 +39,7 @@ public class ReEncryption {
 
     public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, OutputStream outputFile,
                                                char[] passwordOutput, Algorithms decryptAlgorithm)
-            throws IOException, PGPException {
+            throws IOException {
 
         MessageDigest messageDigestEncrypted = Hash.getMd5();
         MessageDigest messageDigest = Hash.getMd5();
@@ -66,7 +65,7 @@ public class ReEncryption {
 
     private static InputStream getDecryptAlgorithm(char[] password, InputStream inputStream,
                                                    Algorithms decryptAlgorithm)
-            throws IOException, PGPException {
+            throws IOException {
         switch (decryptAlgorithm) {
             case AES:
                 return new AesCtr256Ega().decrypt(inputStream, password);

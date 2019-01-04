@@ -29,6 +29,8 @@ import org.bouncycastle.openpgp.operator.PBEDataDecryptorFactory;
 import org.bouncycastle.openpgp.operator.PGPDigestCalculatorProvider;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPDigestCalculatorProviderBuilder;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBEDataDecryptorFactoryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,10 +41,47 @@ import java.security.Security;
  */
 public class PgpSymmetric {
 
-    public static InputStream decrypt(InputStream input, char[] passPhrase) throws IOException, PGPException {
-        installProviderIfNeeded();
-        input = PGPUtil.getDecoderStream(input);
+    private final static Logger logger = LoggerFactory.getLogger(PgpSymmetric.class);
 
+    public static InputStream decrypt(InputStream input, char[] passPhrase) throws IOException {
+        installProviderIfNeeded();
+        InputStream decoderStream = PGPUtil.getDecoderStream(input);
+
+        PGPPBEEncryptedData pbe = getPBEEncryptedData(decoderStream);
+
+        InputStream clearCompressedStream;
+        try {
+            clearCompressedStream = pbe.getDataStream(getDataDecryptorFactory(passPhrase));
+        } catch (PGPException e) {
+            logger.error("Data check error, possible password mismatch");
+            throw new IOException(e.getMessage(), e);
+        }
+        return getPGPLiteralData(clearCompressedStream).getInputStream();
+    }
+
+    private static PBEDataDecryptorFactory getDataDecryptorFactory(char[] passPhrase) {
+        try {
+            PGPDigestCalculatorProvider digestCalculatorProvider = new JcaPGPDigestCalculatorProviderBuilder()
+                    .setProvider("BC").build();
+            return new JcePBEDataDecryptorFactoryBuilder(digestCalculatorProvider)
+                    .setProvider("BC").build(passPhrase);
+        } catch (PGPException e) {
+            logger.error(e.getMessage(), e);
+            throw new AssertionError(e);
+        }
+    }
+
+    private static PGPLiteralData getPGPLiteralData(InputStream clearCompressedStream) throws IOException {
+        PGPCompressedData cData = (PGPCompressedData) new JcaPGPObjectFactory(clearCompressedStream).nextObject();
+        try {
+            return (PGPLiteralData) new JcaPGPObjectFactory(cData.getDataStream()).nextObject();
+        } catch (PGPException e) {
+            logger.error(e.getMessage(), e);
+            throw new AssertionError(e);
+        }
+    }
+
+    private static PGPPBEEncryptedData getPBEEncryptedData(InputStream input) throws IOException {
         JcaPGPObjectFactory pgpF = new JcaPGPObjectFactory(input);
         PGPEncryptedDataList enc;
         Object o = pgpF.nextObject();
@@ -54,25 +93,11 @@ public class PgpSymmetric {
             enc = (PGPEncryptedDataList) pgpF.nextObject();
         }
 
-        PGPPBEEncryptedData pbe = (PGPPBEEncryptedData) enc.get(0);
+        if (enc == null) {
+            throw new IOException("PGP PBE header could not be read");
+        }
 
-        PGPDigestCalculatorProvider digestCalculatorProvider = new JcaPGPDigestCalculatorProviderBuilder()
-                .setProvider("BC").build();
-
-        PBEDataDecryptorFactory dataDecryptorFactory = new JcePBEDataDecryptorFactoryBuilder(digestCalculatorProvider)
-                .setProvider("BC").build(passPhrase);
-
-        InputStream clear = pbe.getDataStream(dataDecryptorFactory);
-
-        JcaPGPObjectFactory pgpFact = new JcaPGPObjectFactory(clear);
-
-        PGPCompressedData cData = (PGPCompressedData) pgpFact.nextObject();
-
-        pgpFact = new JcaPGPObjectFactory(cData.getDataStream());
-
-        PGPLiteralData ld = (PGPLiteralData) pgpFact.nextObject();
-
-        return ld.getInputStream();
+        return (PGPPBEEncryptedData) enc.get(0);
     }
 
     private static void installProviderIfNeeded() {
