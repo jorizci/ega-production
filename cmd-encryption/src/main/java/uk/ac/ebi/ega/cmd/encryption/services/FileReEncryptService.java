@@ -28,8 +28,6 @@ import uk.ac.ebi.ega.encryption.core.encryption.AesCtr256Ega;
 import uk.ac.ebi.ega.encryption.core.encryption.EncryptionAlgorithm;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
 import uk.ac.ebi.ega.encryption.core.encryption.Plain;
-import uk.ac.ebi.ega.encryption.core.exceptions.UnknownFileExtension;
-import uk.ac.ebi.ega.encryption.core.utils.FileUtils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -48,14 +46,10 @@ public class FileReEncryptService {
     }
 
     public void reEncryptFile(String fireFilePath, String outputPath, OutputFormat outputFormat, boolean useFireMount,
-                              int retries, String passwordFile, String outputPasswordFile)
-            throws UnknownFileExtension, IOException {
+                              int retries, char[] password, char[] outputPassword) throws IOException {
 
         final EncryptionAlgorithm decryptionAlgorithm = getDecryptionAlgorithmFromExtension(fireFilePath);
         final EncryptionAlgorithm encryptionAlgorithm = getEncryptionAlgorithmFromOutputFormat(outputFormat);
-
-        final char[] password = FileUtils.readFile(Paths.get(passwordFile));
-        final char[] outputPassword = FileUtils.readFile(Paths.get(outputPasswordFile));
 
         final IFireFile file = fireService.getFile(fireFilePath, !useFireMount);
         final String fileOutputPath = generateFileOutputPath(outputPath, fireFilePath, outputFormat);
@@ -88,9 +82,9 @@ public class FileReEncryptService {
         switch (outputFormat) {
             case PLAIN:
                 return new Plain();
-            case AES_JAG:
+            case AES_CBC_OPENSSL:
                 return new AesCbcOpenSSL();
-            case AES_ALEXANDER:
+            case AES_CTR_256_EGA:
                 return new AesCtr256Ega();
             default:
                 throw new UnsupportedOperationException("Unknown output format");
@@ -102,8 +96,8 @@ public class FileReEncryptService {
         switch (outputFormat) {
             case PLAIN:
                 break;
-            case AES_JAG:
-            case AES_ALEXANDER:
+            case AES_CBC_OPENSSL:
+            case AES_CTR_256_EGA:
                 filename = filename + ".cip";
                 break;
         }

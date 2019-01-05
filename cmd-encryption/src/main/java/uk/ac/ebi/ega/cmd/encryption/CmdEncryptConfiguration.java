@@ -17,6 +17,8 @@
  */
 package uk.ac.ebi.ega.cmd.encryption;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -25,11 +27,15 @@ import uk.ac.ebi.ega.cmd.encryption.options.CmdEncryptOptions;
 import uk.ac.ebi.ega.cmd.encryption.properties.FireProperties;
 import uk.ac.ebi.ega.cmd.encryption.services.FileReEncryptService;
 import uk.ac.ebi.ega.cmd.encryption.services.fire.FireService;
+import uk.ac.ebi.ega.encryption.core.utils.FileUtils;
 
+import java.nio.file.Paths;
 import java.util.Optional;
 
 @Configuration
 public class CmdEncryptConfiguration {
+
+    private final static Logger logger = LoggerFactory.getLogger(CmdEncryptConfiguration.class);
 
     @Bean
     public CommandLineRunner clr() {
@@ -37,14 +43,32 @@ public class CmdEncryptConfiguration {
             Optional<CmdEncryptOptions> var = CmdEncryptOptions.parse(args);
             if (var.isPresent()) {
                 CmdEncryptOptions options = var.get();
+
+                char[] password = null;
+                try {
+                    FileUtils.readPasswordFile(Paths.get(options.getPasswordFile()));
+                } catch (NullPointerException e) {
+                    logger.error("Password file could not be reached");
+                    System.exit(1);
+                    return;
+                }
+                char[] outputPassword = null;
+                try {
+                    outputPassword = FileUtils.readPasswordFile(Paths.get(options.getOutputPasswordFile()));
+                } catch (NullPointerException e) {
+                    logger.error("Output password file could not be reached");
+                    System.exit(1);
+                    return;
+                }
+
                 fileReEncryptService().reEncryptFile(
                         options.getFireFilePath(),
                         options.getOutputPath(),
                         options.getOutputFormat(),
                         options.isUseFireMount(),
                         options.getRetries(),
-                        options.getPasswordFile(),
-                        options.getOutputPasswordFile()
+                        password,
+                        outputPassword
                 );
             } else {
                 System.exit(1);

@@ -90,7 +90,9 @@ public class CmdEncryptOptions {
                     optionSet.valueOf(outputPathOptionSpec),
                     optionSet.valueOf(outputFormatOptionSpec),
                     optionSet.hasArgument(useFireMountPathOptionSpec),
-                    optionSet.valueOf(retriesOptionSpec)
+                    optionSet.valueOf(retriesOptionSpec),
+                    optionSet.valueOf(passwordFileOptionSpec),
+                    optionSet.valueOf(outputPasswordFileOptionSpec)
             ));
         } catch (OptionException e) {
             parser.printHelpOn(System.out);
@@ -101,12 +103,14 @@ public class CmdEncryptOptions {
     }
 
     public CmdEncryptOptions(String fireFilePath, String outputPath, OutputFormat outputFormat, boolean useFireMount,
-                             int retries) {
+                             int retries, String passwordFile, String outputPasswordFile) {
         this.fireFilePath = fireFilePath;
         this.outputPath = outputPath;
         this.outputFormat = outputFormat;
         this.useFireMount = useFireMount;
         this.retries = retries;
+        this.passwordFile = passwordFile;
+        this.outputPasswordFile = passwordFile;
     }
 
     public String getFireFilePath() {

@@ -71,17 +71,17 @@ public class ReportingOutputStream extends OutputStream {
     }
 
     private void logReport(long elapsedMilliseconds) {
-        long total = convertToUnit(totalBytes);
-        long speed = calculateSpeed(totalBytes, lastReportBytes, elapsedMilliseconds);
+        String total = String.format("%.02f", convertToUnit(totalBytes));
+        String speed = String.format("%.02f", calculateSpeed(totalBytes, lastReportBytes, elapsedMilliseconds));
         logger.info("Total written {} Gb at a rate of {} Mb/s", total, speed);
     }
 
-    private long calculateSpeed(long totalBytes, long lastReportBytes, long elapsedMillisecons) {
-        return ((totalBytes - lastReportBytes) / elapsedMillisecons) * (1000L / 1048576L);
+    private double calculateSpeed(long totalBytes, long lastReportBytes, long elapsedMillisecons) {
+        return ((double) (totalBytes - lastReportBytes) / elapsedMillisecons) * ((double) 1000L / 1048576L);
     }
 
-    private static long convertToUnit(long bytes) {
-        return bytes / 1073741824L;
+    private static double convertToUnit(long bytes) {
+        return (double) bytes / 1073741824L;
     }
 
     @Override

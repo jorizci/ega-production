@@ -23,9 +23,9 @@ public enum OutputFormat {
 
     PLAIN("PLAIN"),
 
-    AES_ALEXANDER("AES_ALEXANDER"),
+    AES_CTR_256_EGA("AES_CTR_256_EGA"),
 
-    AES_JAG("AES_JAG");
+    AES_CBC_OPENSSL("AES_CBC_OPENSSL");
 
     private String value;
 

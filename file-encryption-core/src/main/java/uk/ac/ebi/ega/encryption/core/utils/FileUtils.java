@@ -20,6 +20,7 @@ package uk.ac.ebi.ega.encryption.core.utils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 public class FileUtils {
 
@@ -30,6 +31,32 @@ public class FileUtils {
             chars[i] = (char) (bytes[i] & 0xFF);
         }
         return chars;
+    }
+
+    public static char[] trim(char[] array) {
+        int charsToSkipAtBeginning = 0;
+        int lastPositionToCopy = 0;
+
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == ' ' || array[i] == '\n' || array[i] == '\t') {
+                charsToSkipAtBeginning++;
+            } else {
+                break;
+            }
+        }
+
+        for (int i = charsToSkipAtBeginning; i < array.length; i++) {
+            if (!(array[i] == ' ' || array[i] == '\n' || array[i] == '\t')) {
+                lastPositionToCopy = i;
+            } else {
+                break;
+            }
+        }
+        return Arrays.copyOfRange(array, charsToSkipAtBeginning, lastPositionToCopy + 1);
+    }
+
+    public static char[] readPasswordFile(Path path) throws IOException {
+        return trim(readFile(path));
     }
 
 }
