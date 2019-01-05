@@ -24,13 +24,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public abstract class AlgorithmGeneric {
+public abstract class JdkEncryptionAlgorithm implements EncryptionAlgorithm{
 
+    @Override
     public OutputStream encrypt(char[] password, OutputStream outputStream) throws IOException {
         initializeWrite(password, outputStream);
         return new CipherOutputStream(outputStream, getCipher(Cipher.ENCRYPT_MODE));
     }
 
+    @Override
     public InputStream decrypt(InputStream inputStream, char[] password) throws IOException {
         initializeRead(inputStream, password);
         return new CipherInputStream(inputStream, getCipher(Cipher.DECRYPT_MODE));

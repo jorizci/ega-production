@@ -19,10 +19,10 @@ package uk.ac.ebi.ega.encryption.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ega.encryption.core.encryption.AesCtr256Ega;
-import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
+import uk.ac.ebi.ega.encryption.core.encryption.EncryptionAlgorithm;
 import uk.ac.ebi.ega.encryption.core.utils.Hash;
 import uk.ac.ebi.ega.encryption.core.utils.io.IOUtils;
+import uk.ac.ebi.ega.encryption.core.utils.io.ReportingOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,9 +37,9 @@ public class ReEncryption {
 
     public static final int BUFFER_SIZE = 8192;
 
-    public static ReEncryptionReport reEncrypt(InputStream inputFile, char[] passwordInput, OutputStream outputFile,
-                                               char[] passwordOutput, Algorithms decryptAlgorithm)
-            throws IOException {
+    public static ReEncryptionReport reEncrypt(InputStream input, char[] passwordInput, EncryptionAlgorithm decryption,
+                                               OutputStream output, char[] passwordOutput,
+                                               EncryptionAlgorithm encryption) throws IOException {
 
         MessageDigest messageDigestEncrypted = Hash.getMd5();
         MessageDigest messageDigest = Hash.getMd5();
@@ -47,11 +47,11 @@ public class ReEncryption {
 
         long unencryptedSize;
         try (
-                InputStream digestedInputStream = new DigestInputStream(inputFile, messageDigestEncrypted);
-                InputStream decryptedStream = getDecryptAlgorithm(passwordInput, digestedInputStream, decryptAlgorithm);
+                InputStream digestedInputStream = new DigestInputStream(input, messageDigestEncrypted);
+                InputStream decryptedStream = decryption.decrypt(digestedInputStream, passwordInput);
                 InputStream digestedDecryptedStream = new DigestInputStream(decryptedStream, messageDigest);
-                OutputStream digestedOutputStream = new DigestOutputStream(outputFile, messageDigestReEncrypted);
-                OutputStream cypherOutputStream = new AesCtr256Ega().encrypt(passwordOutput, digestedOutputStream);
+                OutputStream digestedOutputStream = new DigestOutputStream(output, messageDigestReEncrypted);
+                OutputStream cypherOutputStream = encryption.encrypt(passwordOutput, digestedOutputStream);
         ) {
             unencryptedSize = IOUtils.bufferedPipe(digestedDecryptedStream, cypherOutputStream, BUFFER_SIZE);
         }
@@ -63,16 +63,13 @@ public class ReEncryption {
         return new ReEncryptionReport(encryptedMd5, unencryptedMd5, reEncryptedMd5, unencryptedSize);
     }
 
-    private static InputStream getDecryptAlgorithm(char[] password, InputStream inputStream,
-                                                   Algorithms decryptAlgorithm)
-            throws IOException {
-        switch (decryptAlgorithm) {
-            case AES:
-                return new AesCtr256Ega().decrypt(inputStream, password);
-            case PGP:
-                return PgpSymmetric.decrypt(inputStream, password);
-            default:
-                throw new RuntimeException("Missing decryption algorithm");
+    public static ReEncryptionReport loggedReEncrypt(InputStream input, char[] passwordInput,
+                                                     EncryptionAlgorithm decryption, OutputStream output,
+                                                     char[] passwordOutput, EncryptionAlgorithm encryption) throws IOException {
+        try (
+                OutputStream reportingOutputStream = new ReportingOutputStream(output);
+        ) {
+            return reEncrypt(input, passwordInput, decryption, reportingOutputStream, passwordOutput, encryption);
         }
     }
 

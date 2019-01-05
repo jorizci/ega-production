@@ -34,16 +34,23 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.Security;
 
 /**
  * Provides functionality to decrypt PGP-symmetric files
  */
-public class PgpSymmetric {
+public class PgpSymmetric implements EncryptionAlgorithm {
 
     private final static Logger logger = LoggerFactory.getLogger(PgpSymmetric.class);
 
-    public static InputStream decrypt(InputStream input, char[] passPhrase) throws IOException {
+    @Override
+    public OutputStream encrypt(char[] password, OutputStream outputStream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public InputStream decrypt(InputStream input, char[] passPhrase) throws IOException {
         installProviderIfNeeded();
         InputStream decoderStream = PGPUtil.getDecoderStream(input);
 

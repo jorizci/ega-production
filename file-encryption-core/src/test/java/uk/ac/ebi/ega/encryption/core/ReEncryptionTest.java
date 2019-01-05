@@ -17,10 +17,11 @@
  */
 package uk.ac.ebi.ega.encryption.core;
 
-import org.bouncycastle.openpgp.PGPException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import uk.ac.ebi.ega.encryption.core.encryption.AesCtr256Ega;
+import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.File;
@@ -31,11 +32,8 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.security.DigestInputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
 import static org.junit.Assert.assertEquals;
 
@@ -46,13 +44,12 @@ public class ReEncryptionTest {
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
-    public void testCipEncryption() throws URISyntaxException, IOException, PGPException, NoSuchAlgorithmException,
-            InvalidAlgorithmParameterException, InvalidKeySpecException, InvalidKeyException {
+    public void testCipEncryption() throws URISyntaxException, IOException, NoSuchAlgorithmException {
         File file = new File(this.getClass().getClassLoader().getResource("test.txt.gpg").toURI());
         File outputFile = temporaryFolder.newFile();
 
         final ReEncryptionReport report = ReEncryption.reEncrypt(new FileInputStream(file), "test".toCharArray(),
-                new FileOutputStream(outputFile), "test2".toCharArray(), Algorithms.PGP);
+                new PgpSymmetric(), new FileOutputStream(outputFile), "test2".toCharArray(), new AesCtr256Ega());
 
         MessageDigest md = MessageDigest.getInstance("MD5");
         try (InputStream is = Files.newInputStream(outputFile.toPath());

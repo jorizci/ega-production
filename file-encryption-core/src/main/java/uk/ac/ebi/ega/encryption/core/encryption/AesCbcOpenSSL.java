@@ -37,7 +37,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 /**
  * Implements encryption / decryption using AES 256 CBC no IV compatible with openssl
  */
-public class AesCbcOpenSSL extends AlgorithmGeneric {
+public class AesCbcOpenSSL extends JdkEncryptionAlgorithm {
 
     private static final byte[] SALTED_MAGIC = "Salted__".getBytes(US_ASCII);
 

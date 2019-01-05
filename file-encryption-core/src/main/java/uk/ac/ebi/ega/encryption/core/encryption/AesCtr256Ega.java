@@ -33,7 +33,7 @@ import java.io.OutputStream;
 /**
  * Provides functionality to encrypt files using Alexander's AES flavour.
  */
-public class AesCtr256Ega extends AlgorithmGeneric {
+public class AesCtr256Ega extends JdkEncryptionAlgorithm {
 
     private static final int ITERATION_COUNT = 1024;
 

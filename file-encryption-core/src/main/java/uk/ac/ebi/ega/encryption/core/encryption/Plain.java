@@ -15,30 +15,22 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.encryption.core;
+package uk.ac.ebi.ega.encryption.core.encryption;
 
-import uk.ac.ebi.ega.encryption.core.exceptions.UnknownFileExtension;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-public enum Algorithms {
+public class Plain implements EncryptionAlgorithm {
 
-    AES("cip"),
-
-    PGP("gpg");
-
-
-    private final String fileExtension;
-
-    Algorithms(String fileExtension) {
-        this.fileExtension = fileExtension;
+    @Override
+    public OutputStream encrypt(char[] password, OutputStream outputStream) throws IOException {
+        return outputStream;
     }
 
-    public static Algorithms fromExtension(String fileExtension) throws UnknownFileExtension {
-        for(Algorithms algorithm: values()){
-            if(fileExtension!=null && algorithm.fileExtension.compareToIgnoreCase(fileExtension)==0){
-                return algorithm;
-            }
-        }
-        throw new UnknownFileExtension(fileExtension);
+    @Override
+    public InputStream decrypt(InputStream inputStream, char[] password) throws IOException {
+        return inputStream;
     }
 
 }

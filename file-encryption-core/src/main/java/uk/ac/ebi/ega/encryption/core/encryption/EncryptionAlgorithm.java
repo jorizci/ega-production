@@ -15,32 +15,16 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.cmd.encryption.options;
+package uk.ac.ebi.ega.encryption.core.encryption;
 
-import java.util.Objects;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-public enum OutputFormat {
+public interface EncryptionAlgorithm {
 
-    PLAIN("PLAIN"),
+    OutputStream encrypt(char[] password, OutputStream outputStream) throws IOException;
 
-    AES_ALEXANDER("AES_ALEXANDER"),
-
-    AES_JAG("AES_JAG");
-
-    private String value;
-
-    OutputFormat(String value) {
-        this.value = value;
-    }
-
-    public static OutputFormat parse(String value) {
-        for (OutputFormat format : values()) {
-            if (Objects.equals(value.toUpperCase(), format.value)) {
-                return format;
-            }
-        }
-        return null;
-    }
-
+    InputStream decrypt(InputStream inputStream, char[] password) throws IOException;
 
 }

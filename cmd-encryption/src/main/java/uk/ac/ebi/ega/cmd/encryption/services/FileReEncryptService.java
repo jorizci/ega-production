@@ -22,8 +22,12 @@ import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ega.cmd.encryption.options.OutputFormat;
 import uk.ac.ebi.ega.cmd.encryption.services.fire.FireService;
 import uk.ac.ebi.ega.cmd.encryption.services.fire.IFireFile;
-import uk.ac.ebi.ega.encryption.core.Algorithms;
 import uk.ac.ebi.ega.encryption.core.ReEncryption;
+import uk.ac.ebi.ega.encryption.core.encryption.AesCbcOpenSSL;
+import uk.ac.ebi.ega.encryption.core.encryption.AesCtr256Ega;
+import uk.ac.ebi.ega.encryption.core.encryption.EncryptionAlgorithm;
+import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
+import uk.ac.ebi.ega.encryption.core.encryption.Plain;
 import uk.ac.ebi.ega.encryption.core.exceptions.UnknownFileExtension;
 import uk.ac.ebi.ega.encryption.core.utils.FileUtils;
 
@@ -47,7 +51,8 @@ public class FileReEncryptService {
                               int retries, String passwordFile, String outputPasswordFile)
             throws UnknownFileExtension, IOException {
 
-        Algorithms algorithm = Algorithms.fromExtension(fireFilePath);
+        final EncryptionAlgorithm decryptionAlgorithm = getDecryptionAlgorithmFromExtension(fireFilePath);
+        final EncryptionAlgorithm encryptionAlgorithm = getEncryptionAlgorithmFromOutputFormat(outputFormat);
 
         final char[] password = FileUtils.readFile(Paths.get(passwordFile));
         final char[] outputPassword = FileUtils.readFile(Paths.get(outputPasswordFile));
@@ -60,7 +65,8 @@ public class FileReEncryptService {
                     InputStream fireFile = file.getStream();
                     OutputStream outputFile = new FileOutputStream(fileOutputPath)
             ) {
-                ReEncryption.reEncrypt(fireFile, password, outputFile, outputPassword, algorithm);
+                ReEncryption.loggedReEncrypt(fireFile, password, decryptionAlgorithm, outputFile, outputPassword,
+                        encryptionAlgorithm);
             } catch (IOException | RuntimeException e) {
                 logger.error(e.getMessage(), e);
             }
@@ -68,13 +74,33 @@ public class FileReEncryptService {
 
     }
 
+    private EncryptionAlgorithm getDecryptionAlgorithmFromExtension(String filePath) {
+        if (filePath.endsWith(".cip")) {
+            return new AesCtr256Ega();
+        } else if (filePath.endsWith(".gpg")) {
+            return new PgpSymmetric();
+        } else {
+            throw new UnsupportedOperationException("Encryption could not be inferred from filepath '" + filePath + "'");
+        }
+    }
+
+    private EncryptionAlgorithm getEncryptionAlgorithmFromOutputFormat(OutputFormat outputFormat) {
+        switch (outputFormat) {
+            case PLAIN:
+                return new Plain();
+            case AES_JAG:
+                return new AesCbcOpenSSL();
+            case AES_ALEXANDER:
+                return new AesCtr256Ega();
+            default:
+                throw new UnsupportedOperationException("Unknown output format");
+        }
+    }
+
     private String generateFileOutputPath(String outputPath, String fireFilePath, OutputFormat outputFormat) {
         String filename = removeEncryptionExtension(Paths.get(fireFilePath).getFileName().toString());
         switch (outputFormat) {
             case PLAIN:
-                break;
-            case GPG:
-                filename = filename + ".gpg";
                 break;
             case AES_JAG:
             case AES_ALEXANDER:

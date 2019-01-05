@@ -101,8 +101,4 @@ public class ReportingOutputStream extends OutputStream {
         outputStream.flush();
     }
 
-    @Override
-    public void close() throws IOException {
-        outputStream.close();
-    }
 }
