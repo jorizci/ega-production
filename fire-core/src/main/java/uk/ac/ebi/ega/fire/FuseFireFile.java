@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.cmd.encryption.services.fire;
+package uk.ac.ebi.ega.fire;
 
 import java.io.File;
 import java.io.FileInputStream;

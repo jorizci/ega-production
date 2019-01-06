@@ -29,10 +29,10 @@ import uk.ac.ebi.ega.database.commons.services.PeaService;
 import uk.ac.ebi.ega.database.commons.services.ProFilerService;
 import uk.ac.ebi.ega.database.commons.services.ReEncryptService;
 import uk.ac.ebi.ega.file.re.encrypt.properties.FileReEncryptProperties;
-import uk.ac.ebi.ega.file.re.encrypt.properties.FireProperties;
 import uk.ac.ebi.ega.file.re.encrypt.services.FileReEncryptService;
 import uk.ac.ebi.ega.file.re.encrypt.services.IKeyGenerator;
-import uk.ac.ebi.ega.file.re.encrypt.services.fire.FireService;
+import uk.ac.ebi.ega.fire.FireService;
+import uk.ac.ebi.ega.fire.properties.FireProperties;
 
 import java.util.Optional;
 

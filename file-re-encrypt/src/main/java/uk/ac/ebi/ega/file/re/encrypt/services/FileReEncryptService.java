@@ -35,8 +35,8 @@ import uk.ac.ebi.ega.file.re.encrypt.exceptions.OriginalEncryptedMd5Mismatch;
 import uk.ac.ebi.ega.file.re.encrypt.exceptions.OutputFileAlreadyExists;
 import uk.ac.ebi.ega.file.re.encrypt.model.ReEncryptionProcessReport;
 import uk.ac.ebi.ega.file.re.encrypt.properties.FileReEncryptProperties;
-import uk.ac.ebi.ega.file.re.encrypt.services.fire.FireService;
-import uk.ac.ebi.ega.file.re.encrypt.services.fire.IFireFile;
+import uk.ac.ebi.ega.fire.FireService;
+import uk.ac.ebi.ega.fire.IFireFile;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -191,7 +191,7 @@ public class FileReEncryptService {
     private ReEncryptionFile doReEncryptFile(EgaPublishedFile file) throws IOException, OutputFileAlreadyExists,
             OriginalEncryptedMd5Mismatch {
         EncryptionAlgorithm decryptionAlgorithm = getDecryptionAlgorithm(file.getEncryptionExtension());
-        final IFireFile fileInFire = fireService.getFile(file);
+        final IFireFile fileInFire = fireService.getFile(file.getFileName(), true);
         File fileOut = generateFileOut(file);
         char[] originalPassword = getOriginalGpgPassword();
         char[] newPassword = keyGenerator.generateKey();
@@ -218,7 +218,7 @@ public class FileReEncryptService {
             case "gpg":
                 return new PgpSymmetric();
             default:
-                throw new UnsupportedOperationException("Encryption could not be inferred '"+extension+ "'");
+                throw new UnsupportedOperationException("Encryption could not be inferred '" + extension + "'");
         }
     }
 

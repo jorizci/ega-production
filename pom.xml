@@ -30,6 +30,7 @@
         <module>cmd-encryption</module>
         <module>file-re-encrypt</module>
         <module>file-re-encrypt-publisher</module>
+        <module>fire-core</module>
     </modules>
 
     <build>

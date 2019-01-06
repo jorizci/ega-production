@@ -24,10 +24,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import uk.ac.ebi.ega.cmd.encryption.options.CmdEncryptOptions;
-import uk.ac.ebi.ega.cmd.encryption.properties.FireProperties;
 import uk.ac.ebi.ega.cmd.encryption.services.FileReEncryptService;
-import uk.ac.ebi.ega.cmd.encryption.services.fire.FireService;
 import uk.ac.ebi.ega.encryption.core.utils.FileUtils;
+import uk.ac.ebi.ega.fire.FireService;
+import uk.ac.ebi.ega.fire.properties.FireProperties;
 
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -46,7 +46,7 @@ public class CmdEncryptConfiguration {
 
                 char[] password = null;
                 try {
-                    FileUtils.readPasswordFile(Paths.get(options.getPasswordFile()));
+                    password = FileUtils.readPasswordFile(Paths.get(options.getPasswordFile()));
                 } catch (NullPointerException e) {
                     logger.error("Password file could not be reached");
                     System.exit(1);

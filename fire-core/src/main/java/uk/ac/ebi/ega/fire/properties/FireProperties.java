@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.file.re.encrypt.properties;
+package uk.ac.ebi.ega.fire.properties;
 
 public class FireProperties {
 
@@ -26,8 +26,6 @@ public class FireProperties {
     private String user;
 
     private String key;
-
-    private boolean useDirect;
 
     public String getMountPath() {
         return mountPath;
@@ -59,14 +57,6 @@ public class FireProperties {
 
     public void setKey(String key) {
         this.key = key;
-    }
-
-    public boolean isUseDirect() {
-        return useDirect;
-    }
-
-    public void setUseDirect(boolean useDirect) {
-        this.useDirect = useDirect;
     }
 
 }

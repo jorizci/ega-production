@@ -15,32 +15,33 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.file.re.encrypt.services.fire;
+package uk.ac.ebi.ega.fire;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 
-public class FuseFireFile implements IFireFile {
+public class FireDirectFile implements IFireFile {
 
-    private final File file;
+    private final String url;
 
-    public FuseFireFile(String firePath, String submittedFileName) throws FileNotFoundException {
-        this.file = new File(firePath + submittedFileName);
-        if(!file.exists()){
-            throw new FileNotFoundException("File "+file.getAbsolutePath()+" could not be found");
-        }
+    private final String headUrl;
+
+    private final String md5;
+
+    public FireDirectFile(String url, String headUrl, String md5) {
+        this.url = url;
+        this.headUrl = headUrl;
+        this.md5 = md5;
     }
 
     @Override
     public String getMd5() {
-        return null;
+        return md5;
     }
 
     @Override
-    public InputStream getStream() throws FileNotFoundException {
-        return new FileInputStream(file);
+    public InputStream getStream() throws IOException {
+        return new FireDirectInputStream(url, headUrl);
     }
 
 }

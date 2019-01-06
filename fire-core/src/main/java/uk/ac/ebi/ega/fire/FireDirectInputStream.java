@@ -15,11 +15,11 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.file.re.encrypt.services.fire;
+package uk.ac.ebi.ega.fire;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ega.file.re.encrypt.services.fire.exceptions.MaxRetryOnConnectionReached;
+import uk.ac.ebi.ega.fire.exceptions.MaxRetryOnConnectionReached;
 
 import java.io.IOException;
 import java.io.InputStream;

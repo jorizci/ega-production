@@ -15,12 +15,11 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.file.re.encrypt.services.fire;
+package uk.ac.ebi.ega.fire;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.ac.ebi.ega.database.commons.models.EgaPublishedFile;
-import uk.ac.ebi.ega.file.re.encrypt.properties.FireProperties;
+import uk.ac.ebi.ega.fire.properties.FireProperties;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -48,11 +47,11 @@ public class FireService {
         this.fireProperties = fireProperties;
     }
 
-    public IFireFile getFile(EgaPublishedFile file) throws FileNotFoundException {
-        if (fireProperties.isUseDirect()) {
+    public IFireFile getFile(String fireFilePath, boolean useFireDirect) throws FileNotFoundException {
+        if (useFireDirect) {
             HttpURLConnection connection = null;
             try {
-                connection = prepareConnection(file, new URL(fireProperties.getUrl()));
+                connection = prepareConnection(fireFilePath, new URL(fireProperties.getUrl()));
                 if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                     Map<String, String> map = parseConnection(connection);
                     return new FireDirectFile(map.get(GET_URL), map.get(HEAD_URL), map.get(OBJECT_MD5));
@@ -67,9 +66,9 @@ public class FireService {
                 }
             }
         } else {
-            return new FuseFireFile(fireProperties.getMountPath(), file.getFileName());
+            return new FuseFireFile(fireProperties.getMountPath(), fireFilePath);
         }
-        throw new FileNotFoundException("File " + file.getFileName() + " could not be accessed " +
+        throw new FileNotFoundException("File " + fireFilePath + " could not be accessed " +
                 "through Fire Direct");
     }
 
@@ -96,12 +95,12 @@ public class FireService {
         return map;
     }
 
-    private HttpURLConnection prepareConnection(EgaPublishedFile file, URL url) throws IOException {
+    private HttpURLConnection prepareConnection(String fireFilePath, URL url) throws IOException {
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("GET");
         con.setRequestProperty("X-FIRE-Archive", "ega");
         con.setRequestProperty("X-FIRE-Key", fireProperties.getKey());
-        con.setRequestProperty("X-FIRE-FilePath", normalizeFileNameForDirect(file.getFileName()));
+        con.setRequestProperty("X-FIRE-FilePath", normalizeFileNameForDirect(fireFilePath));
         return con;
     }
 

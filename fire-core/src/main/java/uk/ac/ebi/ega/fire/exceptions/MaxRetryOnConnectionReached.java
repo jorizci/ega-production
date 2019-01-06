@@ -15,15 +15,14 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.cmd.encryption.services.fire;
+package uk.ac.ebi.ega.fire.exceptions;
 
 import java.io.IOException;
-import java.io.InputStream;
 
-public interface IFireFile {
+public class MaxRetryOnConnectionReached extends IOException {
 
-    String getMd5();
-
-    InputStream getStream() throws IOException;
+    public MaxRetryOnConnectionReached() {
+        super("Max retries to connect has been reached");
+    }
 
 }
