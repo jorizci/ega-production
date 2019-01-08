@@ -20,20 +20,22 @@ package uk.ac.ebi.ega.cmd.encryption.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import uk.ac.ebi.ega.cmd.encryption.options.OutputFormat;
-import uk.ac.ebi.ega.fire.FireService;
-import uk.ac.ebi.ega.fire.IFireFile;
 import uk.ac.ebi.ega.encryption.core.ReEncryption;
+import uk.ac.ebi.ega.encryption.core.ReEncryptionReport;
 import uk.ac.ebi.ega.encryption.core.encryption.AesCbcOpenSSL;
 import uk.ac.ebi.ega.encryption.core.encryption.AesCtr256Ega;
 import uk.ac.ebi.ega.encryption.core.encryption.EncryptionAlgorithm;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
 import uk.ac.ebi.ega.encryption.core.encryption.Plain;
+import uk.ac.ebi.ega.fire.FireService;
+import uk.ac.ebi.ega.fire.IFireFile;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 public class FileReEncryptService {
 
@@ -59,8 +61,13 @@ public class FileReEncryptService {
                     InputStream fireFile = file.getStream();
                     OutputStream outputFile = new FileOutputStream(fileOutputPath)
             ) {
-                ReEncryption.loggedReEncrypt(fireFile, password, decryptionAlgorithm, outputFile, outputPassword,
-                        encryptionAlgorithm);
+                final ReEncryptionReport reEncryptionReport = ReEncryption.loggedReEncrypt(fireFile, password,
+                        decryptionAlgorithm, outputFile, outputPassword, encryptionAlgorithm);
+                if (!Objects.equals(file.getMd5(), reEncryptionReport.getEncryptedMd5())) {
+                    logger.error("Original encrypted Md5 missmatch fire: {} downloaded {}", file.getMd5(),
+                            reEncryptionReport.getEncryptedMd5());
+                }
+                break;
             } catch (IOException | RuntimeException e) {
                 logger.error(e.getMessage(), e);
             }

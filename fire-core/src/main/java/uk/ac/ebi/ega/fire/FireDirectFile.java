@@ -22,16 +22,26 @@ import java.io.InputStream;
 
 public class FireDirectFile implements IFireFile {
 
-    private final String url;
+    private final String urlGet;
 
-    private final String headUrl;
+    private final String urlHead;
 
     private final String md5;
 
-    public FireDirectFile(String url, String headUrl, String md5) {
-        this.url = url;
-        this.headUrl = headUrl;
+    private final long size;
+
+    private final String expirationDate;
+
+    private final String storageClass;
+
+    public FireDirectFile(String urlGet, String urlHead, String md5, long size, String expirationDate,
+                          String storageClass) {
+        this.urlGet = urlGet;
+        this.urlHead = urlHead;
         this.md5 = md5;
+        this.size = size;
+        this.expirationDate = expirationDate;
+        this.storageClass = storageClass;
     }
 
     @Override
@@ -41,7 +51,14 @@ public class FireDirectFile implements IFireFile {
 
     @Override
     public InputStream getStream() throws IOException {
-        return new FireDirectInputStream(url, headUrl);
+        return new FireDirectInputStream(urlGet, urlHead);
     }
 
+    public boolean isStorageS3() {
+        return storageClass.equals("S3");
+    }
+
+    public String getStorageClass() {
+        return storageClass;
+    }
 }

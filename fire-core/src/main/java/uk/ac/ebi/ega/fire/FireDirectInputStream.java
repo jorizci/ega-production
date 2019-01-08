@@ -41,11 +41,13 @@ public class FireDirectInputStream extends InputStream {
 
     private int maxBufferPointer;
 
-    private final String url;
+    private final URL url;
 
     private long totalRead;
 
     private long totalFileSize;
+
+    private boolean allowedByteRangeRequests;
 
     private HttpURLConnection connection;
 
@@ -59,20 +61,25 @@ public class FireDirectInputStream extends InputStream {
         buffer = new byte[8192];
         bufferPointer = 0;
         maxBufferPointer = 0;
-        this.url = url;
+        this.url = new URL(url);
         this.totalRead = 0;
-        this.totalFileSize = getTotalFileSize(headUrl);
+        totalFileSize = -1;
+        allowedByteRangeRequests = false;
+        doReadHeadOfLink(headUrl);
         logger.info("File found in file direct {} with size {}", url, totalFileSize);
     }
 
-    private long getTotalFileSize(String headUrl) throws IOException {
+    private void doReadHeadOfLink(String headUrl) throws IOException {
         URL url = new URL(headUrl);
         HttpURLConnection headConnection = (HttpURLConnection) url.openConnection();
         headConnection.setRequestMethod("HEAD");
         enableBasicAuthIfRequired(headConnection, url);
-        long totalSize = headConnection.getContentLengthLong();
+        if (headConnection.getHeaderField("Accept-Ranges").equals("bytes")) {
+            logger.info("Byte request ranges accepted for this download");
+            allowedByteRangeRequests = true;
+        }
+        totalFileSize = headConnection.getContentLengthLong();
         headConnection.disconnect();
-        return totalSize;
     }
 
     @Override
@@ -94,8 +101,7 @@ public class FireDirectInputStream extends InputStream {
         for (int i = 0; i < MAX_TRIES; i++) {
             try {
                 if (connection == null) {
-                    //reuse connection
-                    connect(url, totalRead);
+                    connect();
                 }
                 maxBufferPointer = httpInputStream.read(buffer);
                 bufferPointer = 0;
@@ -111,19 +117,25 @@ public class FireDirectInputStream extends InputStream {
         }
 
         for (Exception exception : exceptions) {
-            logger.error(exception.getMessage(),exception);
+            logger.error(exception.getMessage(), exception);
         }
         throw new MaxRetryOnConnectionReached();
     }
 
-    private void connect(String contentUrl, long start) throws IOException {
-        URL url = new URL(contentUrl);
+    private void connect() throws IOException {
         connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(5000);
-        connection.setRequestProperty("Range", "bytes=" + start + "-");
+        if (allowedByteRangeRequests) {
+            connection.setRequestProperty("Range", "bytes=" + totalRead + "-");
+        }
         enableBasicAuthIfRequired(connection, url);
         httpInputStream = connection.getInputStream();
+        if(!allowedByteRangeRequests){
+            if(httpInputStream.skip(totalRead)!=totalRead){
+                throw new IOException("Could not resume by skipping bytes");
+            }
+        }
     }
 
     private void closeConnection() throws IOException {
@@ -149,7 +161,7 @@ public class FireDirectInputStream extends InputStream {
         return super.available();
     }
 
-    public long getTotalFileSize() {
+    public long doReadHeadOfLink() {
         return totalFileSize;
     }
 

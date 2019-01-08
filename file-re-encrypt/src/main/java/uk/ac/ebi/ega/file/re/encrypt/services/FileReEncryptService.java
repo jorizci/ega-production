@@ -137,7 +137,7 @@ public class FileReEncryptService {
                         file.getEgaId());
             } catch (OriginalEncryptedMd5Mismatch originalEncryptedMd5Mismatch) {
                 errors++;
-                logger.error("Skipping file {}, encrypted md5 file mismatch.", file.getEgaId());
+                logger.error("Skipping file {}, original encrypted md5 file mismatch.", file.getEgaId());
             }
         }
         return new ReEncryptionProcessReport(success, md5, errors, conflict);

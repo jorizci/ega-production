@@ -19,27 +19,19 @@ package uk.ac.ebi.ega.fire;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import uk.ac.ebi.ega.fire.metadata.FileMetadataParser;
 import uk.ac.ebi.ega.fire.properties.FireProperties;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.ParseException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 public class FireService {
 
     private static final Logger logger = LoggerFactory.getLogger(FireService.class);
-
-    private static final String GET_URL = "OBJECT_GET";
-
-    private static final String HEAD_URL = "OBJECT_HEAD";
-
-    private static final String OBJECT_MD5 = "OBJECT_MD5";
 
     private FireProperties fireProperties;
 
@@ -53,8 +45,11 @@ public class FireService {
             try {
                 connection = prepareConnection(fireFilePath, new URL(fireProperties.getUrl()));
                 if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                    Map<String, String> map = parseConnection(connection);
-                    return new FireDirectFile(map.get(GET_URL), map.get(HEAD_URL), map.get(OBJECT_MD5));
+                    FireDirectFile file = getFileOnS3OrFirstOne(FileMetadataParser.parse(connection.getInputStream()));
+                    if (file != null) {
+                        logger.info("Used file source storage is {}", file.getStorageClass());
+                        return file;
+                    }
                 } else {
                     logger.info("Fire Direct returned {}", connection.getResponseCode());
                 }
@@ -72,27 +67,17 @@ public class FireService {
                 "through Fire Direct");
     }
 
-    private Map<String, String> parseConnection(HttpURLConnection con) throws IOException, ParseException {
-        Map<String, String> map = new HashMap<>();
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
-            String line;
-            StringBuffer buffer = new StringBuffer();
-            while ((line = in.readLine()) != null) {
-                buffer.append(line);
-                final String[] fields = line.split(" ");
-                if (fields.length == 1) {
-                    continue;
-                }
-                if (fields.length > 2) {
-                    throw new ParseException(line, 0);
-                }
-                map.put(fields[0], fields[1]);
-            }
-            if (!(map.containsKey(GET_URL) && map.containsKey(HEAD_URL) && map.containsKey(OBJECT_MD5))) {
-                throw new ParseException(buffer.toString(), 0);
+    private FireDirectFile getFileOnS3OrFirstOne(List<FireDirectFile> fileLinks) {
+        logger.info("Found {} file source(s) in fire", fileLinks.size());
+        for (FireDirectFile fileLink : fileLinks) {
+            if (fileLink.isStorageS3()) {
+                return fileLink;
             }
         }
-        return map;
+        if (!fileLinks.isEmpty()) {
+            return fileLinks.get(0);
+        }
+        return null;
     }
 
     private HttpURLConnection prepareConnection(String fireFilePath, URL url) throws IOException {

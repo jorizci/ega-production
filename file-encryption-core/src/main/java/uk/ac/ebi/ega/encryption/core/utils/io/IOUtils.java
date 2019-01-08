@@ -50,4 +50,10 @@ public class IOUtils {
         return bytes;
     }
 
+    public static void skipFully(InputStream inputStream, long totalBytes) throws IOException {
+        while (totalBytes > 0) {
+            totalBytes -= inputStream.skip(totalBytes);
+        }
+    }
+
 }
