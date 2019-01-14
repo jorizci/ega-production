@@ -21,10 +21,12 @@ import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.util.io.Streams;
 import org.junit.Test;
 import uk.ac.ebi.ega.encryption.core.encryption.PgpSymmetric;
+import uk.ac.ebi.ega.encryption.core.utils.io.ReportingOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -51,4 +53,5 @@ public class PgpSymmetricTest {
         PgpSymmetric pgpSymmetric = new PgpSymmetric();
         byte[] test = Streams.readAll(pgpSymmetric.decrypt(input, "kiwi".toCharArray()));
     }
+
 }

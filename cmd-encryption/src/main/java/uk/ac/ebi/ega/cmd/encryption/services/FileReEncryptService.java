@@ -30,6 +30,7 @@ import uk.ac.ebi.ega.encryption.core.encryption.Plain;
 import uk.ac.ebi.ega.fire.FireService;
 import uk.ac.ebi.ega.fire.IFireFile;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,15 +65,23 @@ public class FileReEncryptService {
                 final ReEncryptionReport reEncryptionReport = ReEncryption.loggedReEncrypt(fireFile, password,
                         decryptionAlgorithm, outputFile, outputPassword, encryptionAlgorithm);
                 if (!Objects.equals(file.getMd5(), reEncryptionReport.getEncryptedMd5())) {
-                    logger.error("Original encrypted Md5 missmatch fire: {} downloaded {}", file.getMd5(),
+                    logger.error("Original encrypted Md5 mismatch fire: {} downloaded {}", file.getMd5(),
                             reEncryptionReport.getEncryptedMd5());
+                    deleteFile(fileOutputPath);
+                } else {
+                    logger.info("Process finished successfully for file {}", fireFilePath);
+                    return;
                 }
-                break;
             } catch (IOException | RuntimeException e) {
                 logger.error(e.getMessage(), e);
+                deleteFile(fileOutputPath);
             }
         }
 
+    }
+
+    private void deleteFile(String fileOutputPath) {
+        new File(fileOutputPath).delete();
     }
 
     private EncryptionAlgorithm getDecryptionAlgorithmFromExtension(String filePath) {
