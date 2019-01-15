@@ -25,10 +25,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import uk.ac.ebi.ega.cmd.encryption.options.CmdEncryptOptions;
 import uk.ac.ebi.ega.cmd.encryption.services.FileReEncryptService;
-import uk.ac.ebi.ega.encryption.core.utils.FileUtils;
+import uk.ac.ebi.ega.encryption.core.utils.io.FileUtils;
 import uk.ac.ebi.ega.fire.FireService;
 import uk.ac.ebi.ega.fire.properties.FireProperties;
 
+import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.Optional;
 
@@ -47,7 +49,7 @@ public class CmdEncryptConfiguration {
                 char[] password = null;
                 try {
                     password = FileUtils.readPasswordFile(Paths.get(options.getPasswordFile()));
-                } catch (NullPointerException e) {
+                } catch (IOException | InvalidPathException | NullPointerException e) {
                     logger.error("Password file could not be reached");
                     System.exit(1);
                     return;
@@ -55,7 +57,7 @@ public class CmdEncryptConfiguration {
                 char[] outputPassword = null;
                 try {
                     outputPassword = FileUtils.readPasswordFile(Paths.get(options.getOutputPasswordFile()));
-                } catch (NullPointerException e) {
+                } catch (IOException | InvalidPathException | NullPointerException e) {
                     logger.error("Output password file could not be reached");
                     System.exit(1);
                     return;

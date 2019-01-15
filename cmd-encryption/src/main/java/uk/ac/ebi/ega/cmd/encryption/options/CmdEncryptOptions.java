@@ -110,7 +110,7 @@ public class CmdEncryptOptions {
         this.useFireMount = useFireMount;
         this.retries = retries;
         this.passwordFile = passwordFile;
-        this.outputPasswordFile = passwordFile;
+        this.outputPasswordFile = outputPasswordFile;
     }
 
     public String getFireFilePath() {

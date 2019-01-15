@@ -15,7 +15,7 @@
  * limitations under the License.
  *
  */
-package uk.ac.ebi.ega.encryption.core.utils;
+package uk.ac.ebi.ega.encryption.core.utils.io;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,6 +24,13 @@ import java.util.Arrays;
 
 public class FileUtils {
 
+    /**
+     * This method is intended for small files that can be handled in memory.
+     *
+     * @param path
+     * @return
+     * @throws IOException
+     */
     public static char[] readFile(Path path) throws IOException {
         final byte[] bytes = Files.readAllBytes(path);
         char[] chars = new char[bytes.length];
